@@ -1,0 +1,160 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:GITART-{#####}",
+ "creation": "2026-05-28 03:29:11.451506",
+ "description": "Normalized GitLab artifact facts across branch, commit, MR, pipeline, job, deployment, release and tag",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "artifact_uid",
+  "gitlab_instance",
+  "project_mapping",
+  "artifact_type",
+  "external_id",
+  "external_iid",
+  "artifact_name",
+  "ref_name",
+  "artifact_status",
+  "web_url",
+  "source_branch",
+  "target_branch",
+  "commit_sha",
+  "title",
+  "author_name",
+  "author_email",
+  "payload_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "artifact_uid",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Artifact UID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gitlab_instance",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "GitLab Instance",
+   "options": "GitLab Instance",
+   "reqd": 1
+  },
+  {
+   "fieldname": "project_mapping",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Project Mapping",
+   "options": "GitLab Project Mapping"
+  },
+  {
+   "fieldname": "artifact_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Artifact Type",
+   "options": "branch\ncommit\nmerge_request\npipeline\njob\ndeployment\nrelease\ntag",
+   "reqd": 1
+  },
+  {
+   "fieldname": "external_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "External ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "external_iid",
+   "fieldtype": "Data",
+   "label": "External IID"
+  },
+  {
+   "fieldname": "artifact_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Artifact Name"
+  },
+  {
+   "fieldname": "ref_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Ref Name"
+  },
+  {
+   "fieldname": "artifact_status",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Artifact Status"
+  },
+  {
+   "fieldname": "web_url",
+   "fieldtype": "Small Text",
+   "label": "Web URL"
+  },
+  {
+   "fieldname": "source_branch",
+   "fieldtype": "Data",
+   "label": "Source Branch"
+  },
+  {
+   "fieldname": "target_branch",
+   "fieldtype": "Data",
+   "label": "Target Branch"
+  },
+  {
+   "fieldname": "commit_sha",
+   "fieldtype": "Data",
+   "label": "Commit SHA"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Small Text",
+   "label": "Title"
+  },
+  {
+   "fieldname": "author_name",
+   "fieldtype": "Data",
+   "label": "Author Name"
+  },
+  {
+   "fieldname": "author_email",
+   "fieldtype": "Data",
+   "label": "Author Email"
+  },
+  {
+   "fieldname": "payload_json",
+   "fieldtype": "Long Text",
+   "label": "Payload JSON"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-28 03:39:21.650781",
+ "modified_by": "Administrator",
+ "module": "Dinext Git",
+ "name": "Development Artifact",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

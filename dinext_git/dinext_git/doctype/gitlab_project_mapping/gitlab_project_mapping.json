@@ -1,0 +1,143 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:GITMAP-{#####}",
+ "creation": "2026-05-28 03:28:57.170469",
+ "description": "Child table of Project for mapping Dinext projects to GitLab repositories and managed webhook state",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "project",
+  "gitlab_instance",
+  "gitlab_group_path",
+  "gitlab_project_path",
+  "gitlab_project_id",
+  "default_base_branch",
+  "branch_naming_template",
+  "enabled",
+  "remote_webhook_id",
+  "webhook_status",
+  "webhook_callback_url",
+  "webhook_last_verified_on",
+  "webhook_last_error",
+  "last_reconciled_mr_at",
+  "last_reconciled_pipeline_at",
+  "last_reconciled_release_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Project",
+   "options": "Project",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gitlab_instance",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "GitLab Instance",
+   "options": "GitLab Instance",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gitlab_group_path",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "GitLab Group Path"
+  },
+  {
+   "fieldname": "gitlab_project_path",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "GitLab Project Path",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gitlab_project_id",
+   "fieldtype": "Data",
+   "label": "GitLab Project ID"
+  },
+  {
+   "default": "develop",
+   "fieldname": "default_base_branch",
+   "fieldtype": "Data",
+   "label": "Default Base Branch"
+  },
+  {
+   "default": "feature/{key}-{slug}",
+   "fieldname": "branch_naming_template",
+   "fieldtype": "Data",
+   "label": "Branch Naming Template"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "remote_webhook_id",
+   "fieldtype": "Data",
+   "label": "Remote Webhook ID"
+  },
+  {
+   "default": "missing",
+   "fieldname": "webhook_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Webhook Status",
+   "options": "missing\nactive\ndrifted\ndisabled\nfailed"
+  },
+  {
+   "fieldname": "webhook_callback_url",
+   "fieldtype": "Data",
+   "label": "Webhook Callback URL"
+  },
+  {
+   "fieldname": "webhook_last_verified_on",
+   "fieldtype": "Datetime",
+   "label": "Webhook Last Verified On"
+  },
+  {
+   "fieldname": "webhook_last_error",
+   "fieldtype": "Small Text",
+   "label": "Webhook Last Error"
+  },
+  {
+   "fieldname": "last_reconciled_mr_at",
+   "fieldtype": "Datetime",
+   "label": "Last Reconciled MR At"
+  },
+  {
+   "fieldname": "last_reconciled_pipeline_at",
+   "fieldtype": "Datetime",
+   "label": "Last Reconciled Pipeline At"
+  },
+  {
+   "fieldname": "last_reconciled_release_at",
+   "fieldtype": "Datetime",
+   "label": "Last Reconciled Release At"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-29 04:03:47.309049",
+ "modified_by": "Administrator",
+ "module": "Dinext Git",
+ "name": "GitLab Project Mapping",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

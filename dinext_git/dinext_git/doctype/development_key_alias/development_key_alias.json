@@ -1,0 +1,112 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:GITALIAS-{#####}",
+ "creation": "2026-05-28 03:29:03.247063",
+ "description": "Additional Dinext and legacy Jira aliases for Task and Issue resolution",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "alias_value",
+  "alias_type",
+  "target_doctype",
+  "target_name",
+  "project",
+  "enabled",
+  "is_canonical",
+  "source_system",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "alias_value",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Alias Value",
+   "reqd": 1
+  },
+  {
+   "fieldname": "alias_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Alias Type",
+   "options": "Dinext Key\nJira Legacy Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "target_doctype",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Target DocType",
+   "options": "Task\nIssue",
+   "reqd": 1
+  },
+  {
+   "fieldname": "target_name",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Target Name",
+   "options": "target_doctype",
+   "reqd": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_canonical",
+   "fieldtype": "Check",
+   "label": "Is Canonical"
+  },
+  {
+   "fieldname": "source_system",
+   "fieldtype": "Data",
+   "label": "Source System"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-28 03:39:21.802012",
+ "modified_by": "Administrator",
+ "module": "Dinext Git",
+ "name": "Development Key Alias",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
