@@ -5,6 +5,35 @@ app_description = "Git/GitLab integration and dev workflow for development teams
 app_email = "info@dinext.ru"
 app_license = "mit"
 
+fixtures = [
+	{
+		"doctype": "Custom Field",
+		"filters": [
+			["module", "=", "Dinext Git"],
+		],
+	},
+	{
+		"doctype": "Property Setter",
+		"filters": [
+			["module", "=", "Dinext Git"],
+		],
+	},
+	{
+		"doctype": "Client Script",
+		"filters": [
+			["module", "=", "Dinext Git"],
+			["enabled", "=", 1],
+		],
+	},
+	{
+		"doctype": "Report",
+		"filters": [
+			["module", "=", "Dinext Git"],
+			["disabled", "=", 0],
+		],
+	},
+]
+
 # Apps
 # ------------------
 
@@ -47,7 +76,10 @@ required_apps = [
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+	"Task": "public/js/task_development.js",
+	"Issue": "public/js/issue_development.js",
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -152,23 +184,15 @@ required_apps = [
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"dinext_git.tasks.all"
-# 	],
-# 	"daily": [
-# 		"dinext_git.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"dinext_git.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"dinext_git.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"dinext_git.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"hourly": [
+		"dinext_git.tasks.run_hourly_reconciliation",
+		"dinext_git.tasks.verify_webhook_health",
+	],
+	"daily": [
+		"dinext_git.tasks.run_daily_reconciliation",
+	],
+}
 
 # Testing
 # -------
@@ -185,9 +209,10 @@ required_apps = [
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
-# override_doctype_dashboards = {
-# 	"Task": "dinext_git.task.get_dashboard_data"
-# }
+override_doctype_dashboards = {
+	"Task": "dinext_git.api.development_panel.get_task_dashboard_data",
+	"Issue": "dinext_git.api.development_panel.get_issue_dashboard_data",
+}
 
 # exempt linked doctypes from being automatically cancelled
 #
