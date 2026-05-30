@@ -27,6 +27,12 @@
     "parentfield": "roles",
     "parenttype": "Report",
     "role": "System Manager"
+   },
+   {
+    "parent": "GitLab Release Composition",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Dinext_User"
    }
   ],
   "timeout": 0
@@ -59,6 +65,12 @@
     "parentfield": "roles",
     "parenttype": "Report",
     "role": "System Manager"
+   },
+   {
+    "parent": "GitLab Traceability Exceptions",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Dinext_User"
    }
   ],
   "timeout": 0
