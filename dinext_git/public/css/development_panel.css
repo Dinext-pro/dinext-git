@@ -110,6 +110,17 @@
 	word-break: break-all;
 }
 
+.dinext-git-development .dinext-git-project-path a {
+	color: var(--text-color);
+	font-weight: inherit;
+	text-decoration: none;
+}
+
+.dinext-git-development .dinext-git-project-path a:hover {
+	color: var(--text-color);
+	text-decoration: underline;
+}
+
 .dinext-git-development .dinext-git-default-badge {
 	font-size: var(--text-xs);
 	font-weight: 500;
@@ -180,7 +191,7 @@
 }
 
 .dinext-git-development .dinext-git-artifact-primary a:hover {
-	color: var(--primary);
+	color: var(--text-color);
 }
 
 .dinext-git-development .dinext-git-artifact-secondary {

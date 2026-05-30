@@ -140,6 +140,20 @@ dinext_git.development_panel.render_type_section = function (artifactType, rows,
 	</div>`;
 };
 
+dinext_git.development_panel.render_project_path = function (group) {
+	const path = frappe.utils.escape_html(group.gitlab_project_path || "");
+	if (!path) {
+		return "";
+	}
+
+	if (group.gitlab_project_url) {
+		const url = frappe.utils.escape_html(group.gitlab_project_url);
+		return `<a href="${url}" target="_blank" rel="noopener noreferrer">${path}</a>`;
+	}
+
+	return path;
+};
+
 dinext_git.development_panel.render_project_section = function (group, { strongLink = false } = {}) {
 	const typeSections = Object.entries(group.artifacts_by_type || {})
 		.map(([artifactType, rows]) =>
@@ -153,7 +167,7 @@ dinext_git.development_panel.render_project_section = function (group, { strongL
 
 	return `<section class="dinext-git-project-section">
 		<div class="dinext-git-project-header">
-			<span class="dinext-git-project-path">${frappe.utils.escape_html(group.gitlab_project_path || "")}</span>
+			<span class="dinext-git-project-path">${dinext_git.development_panel.render_project_path(group)}</span>
 			${defaultBadge}
 		</div>
 		<div class="dinext-git-project-body">${typeSections}</div>

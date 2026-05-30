@@ -72,8 +72,13 @@ class TestDevelopmentPanelPayload(FrappeTestCase):
 		upsert_artifact_link(build_artifact_link_payload(artifact=second_artifact, target_doctype="Task", target_name=task, link_source="pipeline_ref"))
 
 		payload = get_panel("Task", task)
+		base_url = frappe.db.get_value("GitLab Instance", instance, "base_url")
 		self.assertTrue(payload["show_gitlab_tab"])
 		self.assertEqual(len(payload["grouped_artifacts"]), 2)
+		for mapping_name, group in payload["grouped_artifacts"].items():
+			project_path = frappe.db.get_value("GitLab Project Mapping", mapping_name, "gitlab_project_path")
+			self.assertEqual(group["default_base_branch"], "develop")
+			self.assertEqual(group["gitlab_project_url"], f"{base_url}/{project_path}/-/tree/develop")
 		self.assertIn("summary", payload)
 		self.assertTrue(payload["can_create_branch"])
 		self.assertEqual(payload["branch_preview"]["base_branch"], "develop")
