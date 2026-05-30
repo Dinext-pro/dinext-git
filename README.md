@@ -211,7 +211,6 @@ POST /api/method/dinext_git.api.gitlab_webhooks.receive
 - `doctype_js`:
   - `Task -> public/js/task_development.js`
   - `Issue -> public/js/issue_development.js`
-- `override_doctype_dashboards` для `Task` и `Issue`
 - `scheduler_events`:
   - `hourly`: reconciliation и webhook health check
   - `daily`: reconciliation

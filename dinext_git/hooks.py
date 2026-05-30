@@ -216,10 +216,9 @@ default_log_clearing_doctypes = {
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
-override_doctype_dashboards = {
-	"Task": "dinext_git.api.development_panel.get_task_dashboard_data",
-	"Issue": "dinext_git.api.development_panel.get_issue_dashboard_data",
-}
+# override_doctype_dashboards = {
+# 	"Task": "dinext_git.task.get_dashboard_data"
+# }
 
 # exempt linked doctypes from being automatically cancelled
 #
