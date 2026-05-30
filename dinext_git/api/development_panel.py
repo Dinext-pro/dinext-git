@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 import frappe
 from frappe import _
@@ -91,6 +91,23 @@ def _get_allowed_types_for_doctype(project: str | None, doctype: str) -> tuple[b
 			continue
 		allowed.add(type_name)
 	return allow_all, allowed
+
+
+def _gitlab_instance_host(instance_name: str | None) -> str | None:
+	if not instance_name:
+		return None
+
+	try:
+		instance = get_instance(instance_name)
+	except Exception:
+		return instance_name
+
+	base_url = (instance.get("base_url") or "").strip()
+	if not base_url:
+		return instance_name
+
+	host = urlparse(base_url).netloc
+	return host or instance_name
 
 
 def _build_gitlab_project_tree_url(mapping: dict | None) -> str | None:
@@ -220,6 +237,8 @@ def _panel_payload(doctype: str, name: str) -> dict:
 		{
 			"name": row["name"],
 			"gitlab_project_path": row.get("gitlab_project_path"),
+			"gitlab_instance": row.get("gitlab_instance"),
+			"gitlab_instance_host": _gitlab_instance_host(row.get("gitlab_instance")),
 			"default_base_branch": row.get("default_base_branch"),
 			"branch_naming_template": row.get("branch_naming_template") or DEFAULT_BRANCH_TEMPLATE,
 			"is_default": bool(row.get("is_default")),

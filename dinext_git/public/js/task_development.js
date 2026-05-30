@@ -54,9 +54,9 @@ function set_dialog_help(dialog, message, cssClass = "text-muted") {
 async function open_create_branch_dialog(frm, payload) {
 	const preview = payload.branch_preview || null;
 	const options = payload.branch_mapping_options || [];
-	const mappingNames = options.map((row) => row.name);
+	const mappingSelectOptions = dinext_git.development_panel.build_mapping_select_options(options);
 	const defaultMappingName =
-		payload.default_mapping_name || preview?.mapping?.name || mappingNames[0] || null;
+		payload.default_mapping_name || preview?.mapping?.name || options[0]?.name || null;
 	const defaultBranchTemplate =
 		payload.default_branch_template || preview?.branch_template || "feature/{key}-{slug}";
 	const defaultBaseBranch = payload.default_base_branch || preview?.base_branch || "develop";
@@ -73,7 +73,7 @@ async function open_create_branch_dialog(frm, payload) {
 							label: __("GitLab project"),
 							reqd: 1,
 							default: defaultMappingName,
-							options: mappingNames,
+							options: mappingSelectOptions,
 						},
 					]
 				: []),

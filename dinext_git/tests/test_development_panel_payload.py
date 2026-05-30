@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from unittest.mock import patch
+from urllib.parse import urlparse
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -88,6 +89,16 @@ class TestDevelopmentPanelPayload(FrappeTestCase):
 		self.assertEqual(payload["summary"]["development_status_label"], "Pipeline failed")
 		self.assertEqual(len(payload["branch_mapping_options"]), 2)
 		self.assertTrue(payload["show_branch_mapping_details"])
+		self._assert_branch_mapping_option_metadata(payload["branch_mapping_options"], instance)
+
+	def _assert_branch_mapping_option_metadata(self, mapping_options, instance_name):
+		base_url = frappe.db.get_value("GitLab Instance", instance_name, "base_url")
+		expected_host = urlparse(base_url).netloc
+		for row in mapping_options:
+			project_path = frappe.db.get_value("GitLab Project Mapping", row["name"], "gitlab_project_path")
+			self.assertEqual(row["gitlab_project_path"], project_path)
+			self.assertEqual(row["gitlab_instance"], instance_name)
+			self.assertEqual(row["gitlab_instance_host"], expected_host)
 
 	def test_panel_allows_branch_creation_when_multiple_mappings_have_no_default(self):
 		project = make_project()
@@ -111,6 +122,7 @@ class TestDevelopmentPanelPayload(FrappeTestCase):
 			[row["name"] for row in payload["branch_mapping_options"]],
 			[first_mapping, second_mapping],
 		)
+		self._assert_branch_mapping_option_metadata(payload["branch_mapping_options"], instance)
 
 	def test_panel_exposes_declined_label_and_merge_request_link_metadata(self):
 		project = make_project()
