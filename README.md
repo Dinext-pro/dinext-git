@@ -10,13 +10,13 @@
 
 - multi-instance конфигурация GitLab через `GitLab Instance`
 - множественный маппинг `Project -> GitLab project` через child table `GitLab Project Mappings` на вкладке `Development`
-- правила видимости вкладки GitLab по типам `Task`/`Issue` через child table `GitLab Type Visibility Rules` на форме `Project`
-- отдельная вкладка **GitLab** на формах `Task` и `Issue`; она показывается только при наличии GitLab mapping у проекта и при выполнении правил видимости по типу
+- правила видимости вкладки Development по типам `Task`/`Issue` через child table `GitLab Type Visibility Rules` на форме `Project`
+- отдельная вкладка **Development** на формах `Task` и `Issue`; она показывается только при наличии GitLab mapping у проекта и при выполнении правил видимости по типу
 - branch creation из `Task`/`Issue` с preview имени ветки, default mapping и ручным выбором GitLab repository
 - персональные GitLab token на уровне `User` для `Create Branch` без fallback на system token
 - автоматическая регистрация, проверка и восстановление GitLab webhooks из Dinext
 - ingest GitLab webhooks (`push`, `merge request`, `pipeline`) с event log и idempotent normalization
-- soft-delete синхронизация: удалённые в GitLab объекты помечаются в Dinext как `artifact_status = deleted` и исключаются из summary, вкладки GitLab и отчётов (история и связи сохраняются)
+- soft-delete синхронизация: удалённые в GitLab объекты помечаются в Dinext как `artifact_status = deleted` и исключаются из summary, вкладки Development и отчётов (история и связи сохраняются)
 - generic model артефактов разработки (`Development Artifact`, `Development Artifact Link`)
 - проекция dev summary в стандартные `Task` и `Issue`
 - configurable workflow automation через `Development Workflow Rule`
@@ -72,10 +72,10 @@ bench --site your-site.local set-config developer_mode 1
    - `enabled`
    - `is_default` для одного основного repository
 3. Если у проекта несколько mapping, держите ровно один enabled-row с **Default Mapping**.
-4. При необходимости заполните child table **GitLab Type Visibility Rules** в секции GitLab на форме `Project`:
+4. При необходимости заполните child table **GitLab Type Visibility Rules** в секции Development на форме `Project`:
    - `target_doctype`: `Task` или `Issue`
-   - `task_type` или `issue_type`: конкретный тип, для которого показывается вкладка GitLab
-   - если поле типа оставить пустым, вкладка GitLab становится доступна для **всех** типов соответствующего DocType
+   - `task_type` или `issue_type`: конкретный тип, для которого показывается вкладка Development
+   - если поле типа оставить пустым, вкладка Development становится доступна для **всех** типов соответствующего DocType
    - если правил для DocType нет, ограничение по типам не применяется
 5. Из Dinext вызовите webhook admin action (`sync` / `verify`) для регистрации или восстановления хука.
 6. Каждый разработчик, который использует **Create Branch**, должен заполнить в своём `User` поле **GitLab Branch Token**.
@@ -99,7 +99,7 @@ bench --site your-site.local set-config developer_mode 1
 
 1. Разработка стартует из Dinext `Task` или `Issue`.
 2. Перед первым **Create Branch** разработчик заполняет в своём профиле **GitLab Branch Token**.
-3. Если у проекта настроен GitLab mapping и тип документа разрешён правилами видимости, на форме появляется вкладка **GitLab** с блоком разработки и кнопкой **Create Branch**.
+3. Если у проекта настроен GitLab mapping и тип документа разрешён правилами видимости, на форме появляется вкладка **Development** с блоком разработки и кнопкой **Create Branch**.
 4. Разработчик использует кнопку **Create Branch** или включает Dinext key в branch/MR/commit вручную.
 5. Если у проекта несколько GitLab mapping, Dinext использует default mapping для preview и позволяет выбрать другой repository при создании branch.
 6. Рекомендуемая конвенция именования: ветка, MR title и commit message должны содержать **Dinext key**.
@@ -119,7 +119,7 @@ bench --site your-site.local set-config developer_mode 1
 Поведение в продукте:
 
 - удалённые артефакты не учитываются в `custom_git_*` summary на `Task`/`Issue`;
-- на вкладке **GitLab** они не показываются (после удаления branch снова доступен **Create Branch**, если других активных branch artifacts нет);
+- на вкладке **Development** они не показываются (после удаления branch снова доступен **Create Branch**, если других активных branch artifacts нет);
 - отчёты traceability и release composition учитывают только активные артефакты.
 
 Workflow automation при удалении branch сейчас не срабатывает (нет события `branch_deleted` в `Development Workflow Rule`).
@@ -238,7 +238,7 @@ bench --site your-site.local export-fixtures --app dinext_git
 - [`README.md`](README.md) — обзор проекта на верхнем уровне
 - [`AGENTS.md`](AGENTS.md) — проектная доктрина и правила работы с Frappe
 - [`dinext_git/hooks.py`](dinext_git/hooks.py) — bootstrap приложения, fixtures, scheduler и client script bindings
-- [`dinext_git/api/development_panel.py`](dinext_git/api/development_panel.py) — payload вкладки GitLab, расчёт `show_gitlab_tab` и type visibility rules
+- [`dinext_git/api/development_panel.py`](dinext_git/api/development_panel.py) — payload вкладки Development, расчёт `show_gitlab_tab` и type visibility rules
 - [`dinext_git/api/gitlab_webhooks.py`](dinext_git/api/gitlab_webhooks.py) — публичный ingest GitLab webhooks
 - [`dinext_git/api/gitlab_branches.py`](dinext_git/api/gitlab_branches.py) — preview и создание branch
 - [`dinext_git/services/gitlab/store.py`](dinext_git/services/gitlab/store.py) — persistence, `mark_artifact_deleted`, multi-mapping lookup
@@ -246,8 +246,8 @@ bench --site your-site.local export-fixtures --app dinext_git
 - [`dinext_git/services/gitlab/branch_actions.py`](dinext_git/services/gitlab/branch_actions.py) — бизнес-логика создания branch и user-scoped tokens
 - [`dinext_git/services/gitlab/normalizer.py`](dinext_git/services/gitlab/normalizer.py) — нормализация webhook payload в артефакты
 - [`dinext_git/services/gitlab/reconcile.py`](dinext_git/services/gitlab/reconcile.py) — reconciliation и webhook health
-- [`dinext_git/public/js/task_development.js`](dinext_git/public/js/task_development.js) — UI вкладки GitLab на `Task`
-- [`dinext_git/public/js/issue_development.js`](dinext_git/public/js/issue_development.js) — UI вкладки GitLab на `Issue`
+- [`dinext_git/public/js/task_development.js`](dinext_git/public/js/task_development.js) — UI вкладки Development на `Task`
+- [`dinext_git/public/js/issue_development.js`](dinext_git/public/js/issue_development.js) — UI вкладки Development на `Issue`
 - [`dinext_git/dinext_git/doctype/gitlab_type_visibility_rule/gitlab_type_visibility_rule.json`](dinext_git/dinext_git/doctype/gitlab_type_visibility_rule/gitlab_type_visibility_rule.json) — child table правил видимости по типам
 - [`dinext_git/tests/test_development_panel_payload.py`](dinext_git/tests/test_development_panel_payload.py) — тесты payload и type visibility
 
@@ -261,8 +261,8 @@ bench --site your-site.local export-fixtures --app dinext_git
 - **Initial scaffold** — базовое Frappe-приложение Dinext Git с GitLab traceability, webhook ingest, reconciliation, reports и development panel для `Task`/`Issue`.
 - **Multi-mapping** — один Dinext `Project` может ссылаться на несколько GitLab repositories через child table на вкладке `Development`.
 - **User-scoped tokens** — `Create Branch` использует персональный `User.GitLab Branch Token`.
-- **Type visibility rules** — child table `GitLab Type Visibility Rules` ограничивает показ вкладки GitLab по типам `Task`/`Issue`; пустой тип в правиле означает «разрешить все типы» для соответствующего DocType.
-- **Soft-delete sync** — удаление branch в GitLab через delete-push webhook или reconciliation orphan detection; tombstone `artifact_status = deleted`, исключение из summary, вкладки GitLab и отчётов.
+- **Type visibility rules** — child table `GitLab Type Visibility Rules` ограничивает показ вкладки Development по типам `Task`/`Issue`; пустой тип в правиле означает «разрешить все типы» для соответствующего DocType.
+- **Soft-delete sync** — удаление branch в GitLab через delete-push webhook или reconciliation orphan detection; tombstone `artifact_status = deleted`, исключение из summary, вкладки Development и отчётов.
 
 ## 🗂️ Структура репозитория
 
@@ -287,9 +287,6 @@ bench --site your-site.local export-fixtures --app dinext_git
     │   ├── property_setter.json
     │   └── report.json
     ├── patches/v0_0/
-    │   ├── backfill_project_mapping_defaults.py
-    │   ├── bootstrap_dev_fields.py
-    │   ├── bootstrap_legacy_alias_types.py
     │   └── migrate_legacy_jira_aliases.py
     ├── public/js/
     │   ├── issue_development.js
@@ -338,7 +335,7 @@ bench --site your-site.local export-fixtures --app dinext_git
 - `dinext_git/dinext_git/doctype/` содержит metadata-backed определения DocType и контроллеры.
 - `dinext_git/services/gitlab/` содержит GitLab client, webhook normalization, reconciliation, branch actions и projection summary.
 - `dinext_git/api/` содержит whitelisted endpoints для UI, webhook admin и публичного ingest.
-- `dinext_git/public/js/` содержит client scripts форм `Task` и `Issue` для вкладки GitLab.
+- `dinext_git/public/js/` содержит client scripts форм `Task` и `Issue` для вкладки Development.
 - `dinext_git/fixtures/` содержит экспортированные metadata-объекты; редактируются только через MCP/UI и export-fixtures.
 - `dinext_git/tests/` содержит интеграционные и unit-тесты traceability-потока.
 
@@ -430,7 +427,7 @@ bench --site your-site.local export-fixtures --app dinext_git
 - event log / normalized artifact links
 - отчёт **GitLab Traceability Exceptions**
 
-### Если вкладка GitLab не показывается
+### Если вкладка Development не показывается
 
 Проверьте:
 
