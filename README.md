@@ -151,8 +151,8 @@ UI-логика в [`task_development.js`](dinext_git/public/js/task_development
 
 | Канал | Когда срабатывает | Что делает |
 |-------|-------------------|------------|
-| Webhook `Push Hook` | GitLab прислал delete-push (`after` / `checkout_sha` — all-zero SHA) | Помечает branch artifact как `deleted`, не создаёт commit artifacts, пересчитывает `custom_git_*` у связанных `Task`/`Issue` |
-| Scheduled reconciliation | Hourly/daily job `reconcile_mapping` | Сверяет список веток в GitLab с локальными branch artifacts; отсутствующие в remote помечает `deleted` и обновляет summary затронутых work items |
+| Webhook `Push Hook` | GitLab прислал delete-push (`after` / `checkout_sha` — all-zero SHA) | Помечает branch artifact как `deleted`, не создаёт commit artifacts, пересчитывает `custom_git_*` у связанных `Task`/`Issue`, применяет `Development Workflow Rule` для события `branch_deleted` |
+| Scheduled reconciliation | Hourly/daily job `reconcile_mapping` | Сверяет список веток в GitLab с локальными branch artifacts; отсутствующие в remote помечает `deleted`, обновляет summary затронутых work items и применяет `branch_deleted` workflow rules |
 
 Поведение в продукте:
 
@@ -160,7 +160,35 @@ UI-логика в [`task_development.js`](dinext_git/public/js/task_development
 - на вкладке **Development** они не показываются (после удаления branch снова доступен **Create Branch**);
 - отчёты traceability и release composition учитывают только активные артефакты.
 
-Workflow automation при удалении branch сейчас не срабатывает (нет события `branch_deleted` в `Development Workflow Rule`).
+### Development Workflow Rule
+
+`Development Workflow Rule` переводит связанный `Task`/`Issue` по событиям разработки. Правило настраивается в Desk и поддерживает:
+
+- **Target DocType**: `Task` или `Issue`
+- **Project**: необязательный scope; пустое значение означает правило для всех проектов
+- **Development Event**: событие разработки
+- **Target Field**: поле DocType типа `Select` или `Link`, в котором хранится workflow-состояние (по умолчанию `status`)
+- **Target Value** / **Only When Current Value**: целевое значение и guard по текущему значению выбранного поля
+- **Priority** / **Stop After Apply**: порядок применения и остановка после первого успешного правила
+
+Поддерживаемые события:
+
+| Событие | Источник |
+|---------|----------|
+| `branch_created` | Create Branch из Dinext |
+| `branch_linked` | GitLab Push Hook (не delete-push) |
+| `branch_deleted` | GitLab delete-push или reconciliation удалённых веток |
+| `mr_opened` | Merge Request Hook (`open` / `reopen`) |
+| `mr_review_started` | Merge Request Hook (`update` с изменением reviewers) |
+| `mr_changes_requested` | Merge Request Hook (`unapproved`) |
+| `mr_approved` | Merge Request Hook (`approved`) |
+| `mr_merged` | Merge Request Hook (`merge` / `state=merged`) |
+| `pipeline_failed` / `pipeline_succeeded` | Pipeline Hook |
+| `deployment_succeeded` | Pipeline Hook с успешным build/environment |
+
+Применение правила выполняется через полный `Document.save()` выбранного `Task`/`Issue`, а не через `frappe.db.set_value`. Если save-cycle не проходит (например, `Task` переводится в `Completed` без обязательного `completed_on`), документ не меняется, а ошибка попадает в Error Log.
+
+После `bench migrate` существующим правилам автоматически проставляется `target_fieldname = status`.
 
 ### Upgrade notes
 
@@ -488,6 +516,8 @@ bench --site your-site.local export-fixtures --app dinext_git
 
 - summary fields `custom_git_*` на `Task`/`Issue`
 - наличие и порядок `Development Workflow Rule`
+- что правило относится к нужному `Project`, `Target Field` и `Target Value`
+- Error Log на записи `Dinext Git workflow rule failed`
 - event log / normalized artifact links
 - отчёт **GitLab Traceability Exceptions**
 

@@ -82,6 +82,7 @@ class TestBranchActions(FrappeTestCase):
 				"doctype": "Development Workflow Rule",
 				"target_doctype": "Task",
 				"project": project,
+				"target_fieldname": "status",
 				"development_event": "branch_created",
 				"target_status": "Working",
 				"only_when_current_status": "Open",

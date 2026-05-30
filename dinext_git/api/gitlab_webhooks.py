@@ -13,6 +13,11 @@ from dinext_git.services.gitlab.normalizer import (
 )
 from dinext_git.services.gitlab.payloads import flatten_artifact_names
 from dinext_git.services.gitlab.projector import update_work_item_summary
+from dinext_git.services.gitlab.workflow_events import (
+	resolve_merge_request_workflow_events,
+	resolve_pipeline_workflow_events,
+	resolve_push_workflow_event,
+)
 from dinext_git.services.gitlab.workflow_sync import apply_rules
 
 
@@ -71,6 +76,40 @@ def _resolve_mapping(instance_name: str, payload: dict):
 	return None
 
 
+def _resolve_workflow_events(event_type: str, payload: dict) -> list[str]:
+	if event_type == "Push Hook":
+		event_name = resolve_push_workflow_event(payload, is_delete_push=is_branch_delete_push(payload))
+		return [event_name] if event_name else []
+
+	if event_type == "Merge Request Hook":
+		return resolve_merge_request_workflow_events(payload)
+
+	if event_type == "Pipeline Hook":
+		return resolve_pipeline_workflow_events(payload)
+
+	return []
+
+
+def _process_linked_work_items(artifact_names: list[str], workflow_events: list[str]) -> None:
+	if not artifact_names:
+		return
+
+	links = frappe.get_all(
+		"Development Artifact Link",
+		filters={"artifact": ["in", artifact_names]},
+		fields=["target_doctype", "target_name"],
+	)
+	seen: set[tuple[str, str]] = set()
+	for link in links:
+		target_key = (link["target_doctype"], link["target_name"])
+		if target_key in seen:
+			continue
+		seen.add(target_key)
+		update_work_item_summary(link["target_doctype"], link["target_name"])
+		for event_name in workflow_events:
+			apply_rules(link["target_doctype"], link["target_name"], event_name)
+
+
 @frappe.whitelist(allow_guest=True)
 def receive():
 	event_type = frappe.get_request_header("X-Gitlab-Event") or ""
@@ -91,32 +130,15 @@ def receive():
 	)
 
 	normalized = {}
-	event_name = None
 	if event_type == "Push Hook":
 		normalized = normalize_push_event(instance_name, mapping["name"] if mapping else None, payload)
-		if not is_branch_delete_push(payload):
-			event_name = "branch_linked"
 	elif event_type == "Merge Request Hook":
 		normalized = normalize_merge_request_event(instance_name, mapping["name"] if mapping else None, payload)
-		attrs = payload.get("object_attributes") or {}
-		event_name = "mr_merged" if attrs.get("state") == "merged" else "mr_opened"
 	elif event_type == "Pipeline Hook":
 		normalized = normalize_pipeline_event(instance_name, mapping["name"] if mapping else None, payload)
-		status = (payload.get("object_attributes") or {}).get("status")
-		event_name = "pipeline_failed" if status == "failed" else "pipeline_succeeded"
 
-	artifact_names = flatten_artifact_names(normalized)
-	links = []
-	if artifact_names:
-		links = frappe.get_all(
-			"Development Artifact Link",
-			filters={"artifact": ["in", artifact_names]},
-			fields=["target_doctype", "target_name"],
-		)
-	for link in links:
-		update_work_item_summary(link["target_doctype"], link["target_name"])
-		if event_name:
-			apply_rules(link["target_doctype"], link["target_name"], event_name)
+	workflow_events = _resolve_workflow_events(event_type, payload)
+	_process_linked_work_items(flatten_artifact_names(normalized), workflow_events)
 
 	frappe.db.set_value(
 		"GitLab Event Log",
