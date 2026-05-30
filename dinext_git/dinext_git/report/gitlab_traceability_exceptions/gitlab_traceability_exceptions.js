@@ -15,4 +15,17 @@ frappe.query_reports["GitLab Traceability Exceptions"] = {
 			reqd: 1,
 		},
 	],
+
+	formatter: function (value, row, column, data, default_formatter) {
+		value = default_formatter(value, row, column, data);
+		if (column.fieldname !== "web_url" || !value) {
+			return value;
+		}
+		const url = String(value).trim();
+		if (!url) {
+			return value;
+		}
+		const safeUrl = frappe.utils.escape_html(url);
+		return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`;
+	},
 };
