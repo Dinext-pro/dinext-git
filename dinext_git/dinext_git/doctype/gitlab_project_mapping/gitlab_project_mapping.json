@@ -16,6 +16,7 @@
   "default_base_branch",
   "branch_naming_template",
   "enabled",
+  "is_default",
   "remote_webhook_id",
   "webhook_status",
   "webhook_callback_url",
@@ -29,10 +30,9 @@
   {
    "fieldname": "project",
    "fieldtype": "Link",
-   "in_list_view": 1,
+   "hidden": 1,
    "label": "Project",
-   "options": "Project",
-   "reqd": 1
+   "options": "Project"
   },
   {
    "fieldname": "gitlab_instance",
@@ -58,7 +58,8 @@
   {
    "fieldname": "gitlab_project_id",
    "fieldtype": "Data",
-   "label": "GitLab Project ID"
+   "label": "GitLab Project ID",
+   "read_only": 1
   },
   {
    "default": "develop",
@@ -80,9 +81,18 @@
    "label": "Enabled"
   },
   {
+   "default": "0",
+   "description": "Used as the default GitLab repository for Create Branch in this Dinext project.",
+   "fieldname": "is_default",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Default Mapping"
+  },
+  {
    "fieldname": "remote_webhook_id",
    "fieldtype": "Data",
-   "label": "Remote Webhook ID"
+   "label": "Remote Webhook ID",
+   "read_only": 1
   },
   {
    "default": "missing",
@@ -90,37 +100,44 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Webhook Status",
-   "options": "missing\nactive\ndrifted\ndisabled\nfailed"
+   "options": "missing\nactive\ndrifted\ndisabled\nfailed",
+   "read_only": 1
   },
   {
    "fieldname": "webhook_callback_url",
    "fieldtype": "Data",
-   "label": "Webhook Callback URL"
+   "label": "Webhook Callback URL",
+   "read_only": 1
   },
   {
    "fieldname": "webhook_last_verified_on",
    "fieldtype": "Datetime",
-   "label": "Webhook Last Verified On"
+   "label": "Webhook Last Verified On",
+   "read_only": 1
   },
   {
    "fieldname": "webhook_last_error",
    "fieldtype": "Small Text",
-   "label": "Webhook Last Error"
+   "label": "Webhook Last Error",
+   "read_only": 1
   },
   {
    "fieldname": "last_reconciled_mr_at",
    "fieldtype": "Datetime",
-   "label": "Last Reconciled MR At"
+   "label": "Last Reconciled MR At",
+   "read_only": 1
   },
   {
    "fieldname": "last_reconciled_pipeline_at",
    "fieldtype": "Datetime",
-   "label": "Last Reconciled Pipeline At"
+   "label": "Last Reconciled Pipeline At",
+   "read_only": 1
   },
   {
    "fieldname": "last_reconciled_release_at",
    "fieldtype": "Datetime",
-   "label": "Last Reconciled Release At"
+   "label": "Last Reconciled Release At",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
