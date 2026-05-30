@@ -32,6 +32,12 @@ fixtures = [
 			["disabled", "=", 0],
 		],
 	},
+	{
+		"doctype": "Number Card",
+		"filters": [
+			["module", "=", "Dinext Git"],
+		],
+	},
 ]
 
 # Apps
