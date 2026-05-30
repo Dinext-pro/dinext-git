@@ -6,6 +6,7 @@ from frappe import _
 from frappe.model.document import Document
 
 from dinext_git.services.gitlab.validators import ensure_unique_value, validate_branch_template
+from dinext_git.services.gitlab.webhook_admin import WEBHOOK_RECEIVE_PATH, normalize_public_webhook_url
 
 
 class GitLabProjectMapping(Document):
@@ -16,7 +17,9 @@ class GitLabProjectMapping(Document):
 		self.gitlab_project_path = (self.gitlab_project_path or "").strip()
 		self.gitlab_group_path = (self.gitlab_group_path or "").strip()
 		if not self.webhook_callback_url:
-			self.webhook_callback_url = f"{frappe.utils.get_url()}/api/method/dinext_git.api.gitlab_webhooks.receive"
+			self.webhook_callback_url = normalize_public_webhook_url(
+				f"{frappe.utils.get_url()}{WEBHOOK_RECEIVE_PATH}"
+			)
 		if self.is_default and not self.enabled:
 			frappe.throw(_("The default GitLab project mapping must remain enabled."))
 

@@ -8,7 +8,7 @@ import frappe
 from frappe import _
 
 from dinext_git.services.gitlab.client import GitLabClient
-from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
+from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS, find_non_deleted_artifact_name
 from dinext_git.services.gitlab.projector import update_work_item_summary
 from dinext_git.services.gitlab.store import (
 	build_artifact_link_payload,
@@ -132,17 +132,10 @@ def _has_active_branch_artifact(doctype: str, name: str) -> bool:
 	if not links:
 		return False
 
-	active_branch_names = frappe.get_all(
-		"Development Artifact",
-		filters={
-			"name": ["in", [row["artifact"] for row in links]],
-			"artifact_type": "branch",
-			"artifact_status": ["!=", DELETED_ARTIFACT_STATUS],
-		},
-		pluck="name",
-		limit=1,
-	)
-	return bool(active_branch_names)
+	for link in links:
+		if find_non_deleted_artifact_name({"name": link["artifact"], "artifact_type": "branch"}):
+			return True
+	return False
 
 
 def _ensure_branch_name_available(mapping: dict[str, Any], client: GitLabClient, project_id: str | int, branch_name: str) -> None:

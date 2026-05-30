@@ -10,12 +10,19 @@ from dinext_git.services.gitlab.matcher import resolve_keys
 from dinext_git.services.gitlab.store import (
 	build_artifact_link_payload,
 	build_artifact_payload,
-	mark_artifact_deleted,
+	mark_branch_artifacts_deleted,
 	upsert_artifact,
 	upsert_artifact_link,
 	write_event_log,
 )
-from dinext_git.services.gitlab.utils import json_dumps, make_uid
+from dinext_git.services.gitlab.utils import (
+	branch_name_from_ref,
+	is_branch_ref,
+	json_dumps,
+	make_uid,
+	project_id_from_payload,
+	project_path_from_payload,
+)
 
 
 def log_event(
@@ -69,22 +76,37 @@ def _user_avatar(user: dict[str, Any] | None) -> str | None:
 
 
 def is_branch_delete_push(payload: dict[str, Any]) -> bool:
+	if not is_branch_ref(payload.get("ref")):
+		return False
+
+	before = payload.get("before")
 	after = payload.get("after")
+	if before and not _is_zero_sha(before) and _is_zero_sha(after):
+		return True
+
 	checkout_sha = payload.get("checkout_sha")
 	return _is_zero_sha(after) or _is_zero_sha(checkout_sha)
 
 
 def normalize_push_event(instance: str, mapping: str | None, payload: dict[str, Any]) -> dict[str, Any]:
-	ref_name = (payload.get("ref") or "").split("/")[-1]
+	ref_name = branch_name_from_ref(payload.get("ref"))
+	if not ref_name:
+		return {}
+
 	if is_branch_delete_push(payload):
-		branch_artifact = mark_artifact_deleted(
+		deleted_branches = mark_branch_artifacts_deleted(
 			instance=instance,
 			mapping=mapping,
-			artifact_type="branch",
 			external_id=ref_name,
 			payload=payload,
+			project_id=project_id_from_payload(payload),
+			project_path=project_path_from_payload(payload),
 		)
-		return {"branch": branch_artifact, "commits": []}
+		return {
+			"branch": deleted_branches[0] if deleted_branches else None,
+			"branches": deleted_branches,
+			"commits": [],
+		}
 
 	resolved = resolve_keys(ref_name, *(commit.get("message") for commit in payload.get("commits", [])))
 

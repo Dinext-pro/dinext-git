@@ -7,8 +7,8 @@ from typing import Any
 import frappe
 from frappe import _
 
-from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
-from dinext_git.services.gitlab.utils import json_dumps, make_uid
+from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS, find_non_deleted_artifact_name
+from dinext_git.services.gitlab.utils import json_dumps, make_uid, project_id_from_payload, project_path_from_payload
 
 
 def get_mapping(name: str) -> dict[str, Any]:
@@ -31,6 +31,7 @@ def get_mapping(name: str) -> dict[str, Any]:
 			"remote_webhook_id",
 			"webhook_status",
 			"webhook_last_verified_on",
+			"webhook_callback_url",
 		],
 		as_dict=True,
 	)
@@ -163,16 +164,143 @@ def mark_artifact_deleted(
 	external_id: str,
 	payload: dict[str, Any] | None = None,
 ) -> str | None:
-	artifact_uid = make_uid(instance, mapping, artifact_type, external_id)
-	existing_name = frappe.db.get_value("Development Artifact", {"artifact_uid": artifact_uid}, "name")
-	if not existing_name:
-		return None
+	deleted = mark_branch_artifacts_deleted(
+		instance=instance,
+		mapping=mapping,
+		external_id=external_id,
+		payload=payload,
+		project_id=None,
+		project_path=None,
+	)
+	return deleted[0] if deleted else None
+
+
+def _branch_external_id_candidates(external_id: str) -> list[str]:
+	candidates = [external_id]
+	if "/" in external_id:
+		legacy_external_id = external_id.rsplit("/", 1)[-1]
+		if legacy_external_id not in candidates:
+			candidates.append(legacy_external_id)
+	return candidates
+
+
+def _mapping_names_for_gitlab_project(
+	instance: str,
+	*,
+	mapping: str | None = None,
+	project_id: str | int | None = None,
+	project_path: str | None = None,
+) -> list[str]:
+	mapping_names: list[str] = []
+	if mapping:
+		mapping_names.append(mapping)
+
+	if project_id not in (None, ""):
+		for candidate in {project_id, str(project_id)}:
+			for name in frappe.get_all(
+				"GitLab Project Mapping",
+				filters={"gitlab_instance": instance, "gitlab_project_id": candidate, "enabled": 1},
+				pluck="name",
+			):
+				if name not in mapping_names:
+					mapping_names.append(name)
+
+	if project_path:
+		for name in frappe.get_all(
+			"GitLab Project Mapping",
+			filters={"gitlab_instance": instance, "gitlab_project_path": project_path, "enabled": 1},
+			pluck="name",
+		):
+			if name not in mapping_names:
+				mapping_names.append(name)
+
+	return mapping_names
+
+
+def find_branch_artifacts_for_delete(
+	*,
+	instance: str,
+	external_id: str,
+	mapping: str | None = None,
+	project_id: str | int | None = None,
+	project_path: str | None = None,
+) -> list[str]:
+	mapping_names = _mapping_names_for_gitlab_project(
+		instance,
+		mapping=mapping,
+		project_id=project_id,
+		project_path=project_path,
+	)
+	if not mapping_names:
+		return []
+
+	found: list[str] = []
+	seen: set[str] = set()
+
+	for mapping_name in mapping_names:
+		for ext_id in _branch_external_id_candidates(external_id):
+			artifact_uid = make_uid(instance, mapping_name, "branch", ext_id)
+			artifact_name = find_non_deleted_artifact_name(
+				{"artifact_uid": artifact_uid, "artifact_type": "branch"}
+			)
+			if artifact_name and artifact_name not in seen:
+				seen.add(artifact_name)
+				found.append(artifact_name)
+				continue
+
+			artifact_name = find_non_deleted_artifact_name(
+				{
+					"gitlab_instance": instance,
+					"project_mapping": mapping_name,
+					"artifact_type": "branch",
+					"external_id": ext_id,
+				}
+			)
+			if artifact_name and artifact_name not in seen:
+				seen.add(artifact_name)
+				found.append(artifact_name)
+
+	return found
+
+
+def mark_branch_artifacts_deleted(
+	*,
+	instance: str,
+	external_id: str,
+	payload: dict[str, Any] | None = None,
+	mapping: str | None = None,
+	project_id: str | int | None = None,
+	project_path: str | None = None,
+) -> list[str]:
+	artifact_names = find_branch_artifacts_for_delete(
+		instance=instance,
+		external_id=external_id,
+		mapping=mapping,
+		project_id=project_id,
+		project_path=project_path,
+	)
+	if not artifact_names:
+		return []
 
 	values: dict[str, Any] = {"artifact_status": DELETED_ARTIFACT_STATUS}
 	if payload is not None:
 		values["payload_json"] = json_dumps(payload)
-	frappe.db.set_value("Development Artifact", existing_name, values, update_modified=True)
-	return existing_name
+
+	normalized_identity = {
+		"external_id": external_id,
+		"ref_name": external_id,
+		"artifact_name": external_id,
+	}
+
+	for artifact_name in artifact_names:
+		frappe.db.set_value(
+			"Development Artifact",
+			artifact_name,
+			{**values, **normalized_identity},
+			update_modified=True,
+		)
+
+	return artifact_names
 
 
 def upsert_artifact_link(payload: dict[str, Any]) -> str:
