@@ -111,8 +111,8 @@ dinext_git.development_panel.render_artifact_item = function (row, { strongLink 
 	const author = dinext_git.development_panel.render_author_chip(row);
 
 	return `<li class="dinext-git-artifact-item">
-		<div class="dinext-git-artifact-title">${nameMarkup}</div>
-		<div class="dinext-git-artifact-meta">
+		<div class="dinext-git-artifact-primary">${nameMarkup}</div>
+		<div class="dinext-git-artifact-secondary">
 			${statusPill}
 			${updated}
 			${author}
@@ -120,90 +120,140 @@ dinext_git.development_panel.render_artifact_item = function (row, { strongLink 
 	</li>`;
 };
 
-dinext_git.development_panel.render_type_heading = function (artifactType, rows, lastUpdatedByType) {
-	const label = frappe.utils.to_title_case((rows[0]?.artifact_type_label || artifactType).replaceAll("_", " "));
-	const typeUpdated = lastUpdatedByType?.[artifactType];
-	const typeUpdatedMarkup = typeUpdated
-		? `<span class="dinext-git-type-updated text-muted">${dinext_git.development_panel.render_updated_on(typeUpdated)}</span>`
+dinext_git.development_panel.render_type_label = function (artifactType, rows) {
+	return frappe.utils.to_title_case((rows[0]?.artifact_type_label || artifactType).replaceAll("_", " "));
+};
+
+dinext_git.development_panel.render_type_section = function (artifactType, rows, { strongLink = false } = {}) {
+	const label = dinext_git.development_panel.render_type_label(artifactType, rows);
+	const count = rows.length;
+	const items = rows
+		.map((row) => dinext_git.development_panel.render_artifact_item(row, { strongLink }))
+		.join("");
+
+	return `<div class="dinext-git-type-section">
+		<div class="dinext-git-type-header">
+			<span class="dinext-git-type-label">${frappe.utils.escape_html(label)}</span>
+			<span class="dinext-git-type-count text-muted">${count}</span>
+		</div>
+		<ul class="dinext-git-artifact-list list-unstyled mb-0">${items}</ul>
+	</div>`;
+};
+
+dinext_git.development_panel.render_project_section = function (group, { strongLink = false } = {}) {
+	const typeSections = Object.entries(group.artifacts_by_type || {})
+		.map(([artifactType, rows]) =>
+			dinext_git.development_panel.render_type_section(artifactType, rows, { strongLink })
+		)
+		.join("");
+
+	const defaultBadge = group.is_default
+		? `<span class="indicator-pill gray no-indicator-dot dinext-git-default-badge">${__("Default")}</span>`
 		: "";
-	return `<h6 class="dinext-git-type-heading">${label}${typeUpdatedMarkup}</h6>`;
+
+	return `<section class="dinext-git-project-section">
+		<div class="dinext-git-project-header">
+			<span class="dinext-git-project-path">${frappe.utils.escape_html(group.gitlab_project_path || "")}</span>
+			${defaultBadge}
+		</div>
+		<div class="dinext-git-project-body">${typeSections}</div>
+	</section>`;
 };
 
 dinext_git.development_panel.render_summary_meta = function (summary) {
-	const lastUpdated = summary.last_updated_on
-		? `<div class="dinext-git-last-updated text-muted">${__("Last updated")}: ${frappe.datetime.comment_when(summary.last_updated_on)}</div>`
-		: "";
 	const lastByType = summary.last_updated_on_by_type || {};
 	const typeEntries = Object.entries(lastByType);
-	const typeSummary = typeEntries.length
-		? `<div class="dinext-git-type-summary">${typeEntries
-				.map(
-					([artifactType, timestamp]) =>
-						`<span class="dinext-git-type-summary-item text-muted">${frappe.utils.to_title_case(artifactType.replaceAll("_", " "))}: ${frappe.datetime.comment_when(timestamp)}</span>`
-				)
-				.join("")}</div>`
+	const chips = typeEntries
+		.map(
+			([artifactType, timestamp]) =>
+				`<span class="dinext-git-summary-chip text-muted">${frappe.utils.to_title_case(artifactType.replaceAll("_", " "))}: ${frappe.datetime.comment_when(timestamp)}</span>`
+		)
+		.join("");
+
+	const lastUpdated = summary.last_updated_on
+		? `<span class="dinext-git-summary-chip dinext-git-summary-chip--primary text-muted">${__("Last updated")}: ${frappe.datetime.comment_when(summary.last_updated_on)}</span>`
 		: "";
 
-	if (!lastUpdated && !typeSummary) {
+	if (!lastUpdated && !chips) {
 		return "";
 	}
 
-	return `<div class="dinext-git-summary-meta">${lastUpdated}${typeSummary}</div>`;
+	return `<div class="dinext-git-summary-meta">${lastUpdated}${chips}</div>`;
 };
 
-dinext_git.development_panel.render_grouped_artifacts = function (groupedArtifacts, summary, { strongLink = false } = {}) {
-	const lastUpdatedByType = summary.last_updated_on_by_type || {};
-	return Object.values(groupedArtifacts || {})
-		.map((group) => {
-			const typeSections = Object.entries(group.artifacts_by_type || {})
-				.map(([artifactType, rows]) => {
-					const items = rows
-						.map((row) => dinext_git.development_panel.render_artifact_item(row, { strongLink }))
-						.join("");
-					return `<div class="mb-3">${dinext_git.development_panel.render_type_heading(artifactType, rows, lastUpdatedByType)}<ul class="list-unstyled mb-0">${items}</ul></div>`;
-				})
-				.join("");
-			const defaultBadge = group.is_default
-				? `<span class="indicator-pill gray no-indicator-dot ml-2">${__("★")}</span>`
-				: "";
-			return `<div class="mb-4">
-				<h5>${frappe.utils.escape_html(group.gitlab_project_path || "")}${defaultBadge}</h5>
-				${typeSections}
-			</div>`;
-		})
+dinext_git.development_panel.render_discrepancy_badges = function (summary) {
+	const flags = (summary.discrepancy_badges || [])
+		.map(
+			(flag) =>
+				`<span class="indicator-pill red no-indicator-dot" title="${frappe.utils.escape_html(flag.code)}">${frappe.utils.escape_html(flag.label)}</span>`
+		)
 		.join("");
+
+	if (!flags) {
+		return "";
+	}
+
+	return `<div class="dinext-git-discrepancy-badges">${flags}</div>`;
+};
+
+dinext_git.development_panel.render_status_count_markup = function (summary) {
+	const statusCount = Number(summary.status_merge_request_count || 0);
+	if (!statusCount) {
+		return "";
+	}
+
+	const statusCountTitle = frappe.utils.escape_html(summary.status_merge_request_label || __("Merge requests"));
+	if (summary.status_merge_request_url) {
+		return `<a class="dinext-git-status-count" href="${frappe.utils.escape_html(summary.status_merge_request_url)}" target="_blank" rel="noopener noreferrer" title="${statusCountTitle}">${statusCount}</a>`;
+	}
+
+	return `<span class="dinext-git-status-count text-muted" title="${statusCountTitle}">${statusCount}</span>`;
+};
+
+dinext_git.development_panel.render_panel_header = function (summary) {
+	const statusPill = dinext_git.development_panel.render_status_pill(summary);
+	const statusCountMarkup = dinext_git.development_panel.render_status_count_markup(summary);
+	const summaryMeta = dinext_git.development_panel.render_summary_meta(summary);
+	const discrepancyBadges = dinext_git.development_panel.render_discrepancy_badges(summary);
+
+	return `<header class="dinext-git-header">
+		<div class="dinext-git-status-row">
+			<span class="dinext-git-status-label">${__("Development status")}</span>
+			<div class="dinext-git-status-value">
+				${statusPill}${statusCountMarkup}
+			</div>
+		</div>
+		${summaryMeta}
+		${discrepancyBadges}
+	</header>`;
+};
+
+dinext_git.development_panel.render_empty_state = function (payload) {
+	const message = payload.empty_state_message || __("No development activity yet.");
+	return `<div class="dinext-git-empty-state">
+		<div class="dinext-git-empty-state-title">${__("No development activity")}</div>
+		<p class="dinext-git-empty-state-message text-muted mb-0">${frappe.utils.escape_html(message)}</p>
+	</div>`;
+};
+
+dinext_git.development_panel.render_grouped_artifacts = function (groupedArtifacts, { strongLink = false } = {}) {
+	const sections = Object.values(groupedArtifacts || {})
+		.map((group) => dinext_git.development_panel.render_project_section(group, { strongLink }))
+		.join("");
+
+	if (!sections) {
+		return "";
+	}
+
+	return `<div class="dinext-git-body">${sections}</div>`;
 };
 
 dinext_git.development_panel.render_panel_html = function (payload, { strongLink = false } = {}) {
 	const summary = payload.summary || {};
-	const flags = (summary.discrepancy_badges || [])
-		.map((flag) => `<span class="indicator-pill red" title="${frappe.utils.escape_html(flag.code)}">${frappe.utils.escape_html(flag.label)}</span>`)
-		.join(" ");
-	const statusCount = Number(summary.status_merge_request_count || 0);
-	const statusCountTitle = frappe.utils.escape_html(summary.status_merge_request_label || __("Merge requests"));
-	const statusCountMarkup = statusCount
-		? summary.status_merge_request_url
-			? ` <a href="${frappe.utils.escape_html(summary.status_merge_request_url)}" target="_blank" rel="noopener noreferrer" title="${statusCountTitle}">(${statusCount})</a>`
-			: ` <span class="text-muted" title="${statusCountTitle}">(${statusCount})</span>`
-		: "";
-	const sections = dinext_git.development_panel.render_grouped_artifacts(payload.grouped_artifacts, summary, {
-		strongLink,
-	});
+	const header = dinext_git.development_panel.render_panel_header(summary);
 	const body =
-		sections || `<p class="text-muted">${payload.empty_state_message || __("No development activity yet.")}</p>`;
-	const summaryMeta = dinext_git.development_panel.render_summary_meta(summary);
+		dinext_git.development_panel.render_grouped_artifacts(payload.grouped_artifacts, { strongLink }) ||
+		dinext_git.development_panel.render_empty_state(payload);
 
-	const statusPill = dinext_git.development_panel.render_status_pill(summary);
-
-	return `<div class="dinext-git-development">
-		<div class="mb-2">
-			<div class="dinext-git-status-row">
-				<strong>${__("Development status")}:</strong>
-				${statusPill}${statusCountMarkup}
-			</div>
-			${summaryMeta}
-			${flags ? `<div class="mt-2 dinext-git-discrepancy-badges">${flags}</div>` : ""}
-		</div>
-		${body}
-	</div>`;
+	return `<div class="dinext-git-development">${header}${body}</div>`;
 };
