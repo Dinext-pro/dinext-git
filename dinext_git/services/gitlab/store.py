@@ -116,23 +116,16 @@ def get_mapping_for_project(project: str | None) -> dict[str, Any] | None:
 
 
 def get_instance(name: str) -> dict[str, Any]:
-	instance = frappe.db.get_value(
-		"GitLab Instance",
-		name,
-		[
-			"name",
-			"base_url",
-			"api_token",
-			"webhook_secret",
-			"verify_ssl",
-			"timeout_seconds",
-			"enabled",
-		],
-		as_dict=True,
-	)
-	if not instance:
-		frappe.throw(_("GitLab instance {0} was not found.").format(name))
-	return instance
+	doc = frappe.get_doc("GitLab Instance", name)
+	return {
+		"name": doc.name,
+		"base_url": doc.base_url,
+		"api_token": doc.get_password("api_token"),
+		"webhook_secret": doc.get_password("webhook_secret"),
+		"verify_ssl": doc.verify_ssl,
+		"timeout_seconds": doc.timeout_seconds,
+		"enabled": doc.enabled,
+	}
 
 
 def get_work_item(doctype: str, name: str) -> dict[str, Any]:
