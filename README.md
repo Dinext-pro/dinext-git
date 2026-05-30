@@ -394,6 +394,7 @@ bench --site your-site.local export-fixtures --app dinext_git
 Проверьте:
 
 - `GitLab Event Log` для delivery status и payload
+- `Log Settings`, если исторические записи `GitLab Event Log` пропали из-за retention policy;
 - строку **GitLab Project Mappings** на вкладке `Project -> Development`
 - `GitLab Project Mapping.webhook_status`
 - `GitLab Project Mapping.webhook_last_error`
@@ -408,6 +409,10 @@ bench --site your-site.local export-fixtures --app dinext_git
 - `GitLab Project Mapping.last_reconciled_pipeline_at`
 - `Reconciliation Cursor`
 - scheduler jobs `run_hourly_reconciliation` и `run_daily_reconciliation`
+
+### Retention GitLab Event Log
+
+`GitLab Event Log` подключён к стандартному механизму Frappe **Log Settings**. По умолчанию записи очищаются по retention `30` дней, но оператор может изменить это значение в `Log Settings -> Logs to Clear` для doctype `GitLab Event Log`.
 
 ### Если ветка удалена в GitLab, но в Dinext ещё «живая»
 

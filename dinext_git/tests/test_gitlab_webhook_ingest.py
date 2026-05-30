@@ -3,7 +3,7 @@ from __future__ import annotations
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from dinext_git.api.gitlab_webhooks import _resolve_mapping
+from dinext_git.api.gitlab_webhooks import _resolve_instance_name, _resolve_mapping
 from dinext_git.services.gitlab.normalizer import normalize_push_event
 from dinext_git.services.gitlab.projector import update_work_item_summary
 from dinext_git.services.gitlab.store import build_artifact_link_payload, upsert_artifact_link
@@ -11,6 +11,14 @@ from dinext_git.tests.test_utils import make_gitlab_instance, make_mapping, make
 
 
 class TestGitLabWebhookIngest(FrappeTestCase):
+	def test_resolve_instance_name_matches_password_field_secret(self):
+		instance = make_gitlab_instance()
+		secret = frappe.get_doc("GitLab Instance", instance).get_password("webhook_secret")
+
+		resolved = _resolve_instance_name(secret)
+
+		self.assertEqual(resolved, instance)
+
 	def test_push_event_links_branch_and_commit(self):
 		project = make_project()
 		task = make_task(project)

@@ -98,6 +98,13 @@ async function render_dinext_git_panel(frm) {
 	const flags = (summary.discrepancy_badges || [])
 		.map((flag) => `<span class="indicator-pill red" title="${flag.code}">${flag.label}</span>`)
 		.join(" ");
+	const statusCount = Number(summary.status_merge_request_count || 0);
+	const statusCountTitle = frappe.utils.escape_html(summary.status_merge_request_label || __("Merge requests"));
+	const statusCountMarkup = statusCount
+		? summary.status_merge_request_url
+			? ` <a href="${summary.status_merge_request_url}" target="_blank" rel="noopener noreferrer" title="${statusCountTitle}">(${statusCount})</a>`
+			: ` <span class="text-muted" title="${statusCountTitle}">(${statusCount})</span>`
+		: "";
 	const body = sections || `<p class="text-muted">${payload.empty_state_message || __("No development activity yet.")}</p>`;
 	const previewBlock = preview
 		? `<div class="mb-3 text-muted">
@@ -114,7 +121,7 @@ async function render_dinext_git_panel(frm) {
 	panel.$wrapper.html(
 		`<div class="dinext-git-development">
 			<div class="mb-2">
-				<strong>${__("Development status")}:</strong> ${summary.development_status_label || __("Not started")}
+				<strong>${__("Development status")}:</strong> ${summary.development_status_label || __("Not started")}${statusCountMarkup}
 				${flags ? `<div class="mt-2">${flags}</div>` : ""}
 			</div>
 			${previewBlock}

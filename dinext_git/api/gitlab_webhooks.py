@@ -16,6 +16,16 @@ from dinext_git.services.gitlab.projector import update_work_item_summary
 from dinext_git.services.gitlab.workflow_sync import apply_rules
 
 
+def _resolve_instance_name(token: str | None) -> str | None:
+	if not token:
+		return None
+
+	for instance_name in frappe.get_all("GitLab Instance", filters={"enabled": 1}, pluck="name"):
+		if frappe.get_doc("GitLab Instance", instance_name).get_password("webhook_secret") == token:
+			return instance_name
+	return None
+
+
 def _resolve_mapping(instance_name: str, payload: dict):
 	project_id = (payload.get("project") or {}).get("id") or (payload.get("project") or {}).get("project_id")
 	if not project_id:
@@ -67,7 +77,7 @@ def receive():
 	delivery_id = frappe.get_request_header("X-Gitlab-Event-UUID")
 	token = frappe.get_request_header("X-Gitlab-Token")
 	payload = frappe.request.get_json() or {}
-	instance_name = frappe.db.get_value("GitLab Instance", {"webhook_secret": token, "enabled": 1}, "name")
+	instance_name = _resolve_instance_name(token)
 	if not instance_name:
 		frappe.throw("Unknown GitLab webhook source", frappe.PermissionError)
 
