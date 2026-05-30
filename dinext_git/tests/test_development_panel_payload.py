@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from dinext_git.api.development_panel import get_panel
@@ -68,6 +69,42 @@ class TestDevelopmentPanelPayload(FrappeTestCase):
 		self.assertEqual(payload["summary"]["development_status_label"], "Pipeline failed")
 		self.assertEqual(len(payload["branch_mapping_options"]), 2)
 		self.assertTrue(payload["show_branch_mapping_details"])
+
+	def test_panel_exposes_declined_label_and_merge_request_link_metadata(self):
+		project = make_project()
+		task = make_task(project)
+		instance = make_gitlab_instance()
+		mapping = make_mapping(project, instance)
+		project_path = frappe.db.get_value("GitLab Project Mapping", mapping, "gitlab_project_path")
+		base_url = frappe.db.get_value("GitLab Instance", instance, "base_url")
+
+		artifact = upsert_artifact(
+			build_artifact_payload(
+				instance=instance,
+				mapping=mapping,
+				artifact_type="merge_request",
+				external_id="77",
+				data={"artifact_name": "MR 77", "artifact_status": "closed", "web_url": "https://gitlab.example.com/mr/77"},
+			)
+		)
+		upsert_artifact_link(
+			build_artifact_link_payload(
+				artifact=artifact,
+				target_doctype="Task",
+				target_name=task,
+				link_source="mr_title",
+			)
+		)
+
+		payload = get_panel("Task", task)
+
+		self.assertEqual(payload["summary"]["development_status_label"], "Declined")
+		self.assertEqual(payload["summary"]["status_merge_request_count"], 1)
+		self.assertEqual(payload["summary"]["status_merge_request_label"], "Declined merge requests")
+		self.assertEqual(
+			payload["summary"]["status_merge_request_url"],
+			f"{base_url}/{project_path}/-/merge_requests?scope=all&state=closed",
+		)
 
 	def test_panel_hides_create_branch_after_branch_artifact_exists(self):
 		project = make_project()

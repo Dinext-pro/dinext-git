@@ -94,6 +94,13 @@ frappe.ui.form.on("Issue", {
 		const flags = (summary.discrepancy_badges || [])
 			.map((flag) => `<span class="indicator-pill red" title="${flag.code}">${flag.label}</span>`)
 			.join(" ");
+		const statusCount = Number(summary.status_merge_request_count || 0);
+		const statusCountTitle = frappe.utils.escape_html(summary.status_merge_request_label || __("Merge requests"));
+		const statusCountMarkup = statusCount
+			? summary.status_merge_request_url
+				? ` <a href="${summary.status_merge_request_url}" target="_blank" rel="noopener noreferrer" title="${statusCountTitle}">(${statusCount})</a>`
+				: ` <span class="text-muted" title="${statusCountTitle}">(${statusCount})</span>`
+			: "";
 		const previewBlock = preview
 			? `<div class="mb-3 text-muted">
 				<div><strong>${__("Branch preview")}:</strong> <code>${preview.branch_name}</code></div>
@@ -108,7 +115,7 @@ frappe.ui.form.on("Issue", {
 
 		panel.$wrapper.html(
 			`<div class="dinext-git-development">
-				<p><strong>${__("Development status")}:</strong> ${summary.development_status_label || __("Not started")}</p>
+				<p><strong>${__("Development status")}:</strong> ${summary.development_status_label || __("Not started")}${statusCountMarkup}</p>
 				${flags ? `<div class="mb-2">${flags}</div>` : ""}
 				${previewBlock}
 				${artifacts || `<p class="text-muted">${payload.empty_state_message || __("No development activity yet.")}</p>`}

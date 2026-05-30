@@ -14,6 +14,7 @@ DEVELOPMENT_STATUS_LABELS = {
 	"not_started": _("Not started"),
 	"in_progress": _("In progress"),
 	"merged": _("Merged"),
+	"declined": _("Declined"),
 	"pipeline_failed": _("Pipeline failed"),
 	"deployed": _("Deployed"),
 }
@@ -24,12 +25,22 @@ DISCREPANCY_FLAG_LABELS = {
 	"release_without_merge": _("Release without merge"),
 }
 
+MERGE_REQUEST_STATE_LABELS = {
+	"opened": _("Open merge requests"),
+	"merged": _("Merged merge requests"),
+	"closed": _("Declined merge requests"),
+}
+
 
 def _decorate_summary(summary: dict) -> dict:
 	decorated = dict(summary)
 	status_code = decorated.get("development_status")
 	decorated["development_status_label"] = DEVELOPMENT_STATUS_LABELS.get(
 		status_code, frappe.unscrub(status_code or "not_started")
+	)
+	state_code = decorated.get("status_merge_request_state")
+	decorated["status_merge_request_label"] = MERGE_REQUEST_STATE_LABELS.get(
+		state_code, frappe.unscrub(state_code or "merge_requests")
 	)
 	decorated["discrepancy_badges"] = [
 		{

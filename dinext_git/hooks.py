@@ -80,7 +80,10 @@ doctype_js = {
 	"Task": "public/js/task_development.js",
 	"Issue": "public/js/issue_development.js",
 }
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_list_js = {
+	"Task": "public/js/task_development_list.js",
+	"Issue": "public/js/issue_development_list.js",
+}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -192,6 +195,10 @@ scheduler_events = {
 	"daily": [
 		"dinext_git.tasks.run_daily_reconciliation",
 	],
+}
+
+default_log_clearing_doctypes = {
+	"GitLab Event Log": 30,
 }
 
 # Testing
