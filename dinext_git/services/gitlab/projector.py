@@ -7,6 +7,8 @@ from typing import Any
 
 import frappe
 
+from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
+
 
 def collect_work_item_summary(target_doctype: str, target_name: str) -> dict[str, Any]:
 	links = frappe.get_all(
@@ -40,6 +42,17 @@ def collect_work_item_summary(target_doctype: str, target_name: str) -> dict[str
 		],
 		order_by="modified desc",
 	)
+	artifacts = [artifact for artifact in artifacts if artifact.get("artifact_status") != DELETED_ARTIFACT_STATUS]
+	if not artifacts:
+		return {
+			"artifact_count": 0,
+			"artifact_types": {},
+			"last_merge_request": None,
+			"last_pipeline_status": None,
+			"last_deployment_status": None,
+			"discrepancy_flags": [],
+			"development_status": "not_started",
+		}
 	type_counter = Counter(artifact["artifact_type"] for artifact in artifacts)
 	last_merge_request = next((row for row in artifacts if row["artifact_type"] == "merge_request"), None)
 	last_pipeline = next((row for row in artifacts if row["artifact_type"] == "pipeline"), None)

@@ -71,6 +71,9 @@ class GitLabClient:
 			params={"branch": branch_name, "ref": ref},
 		)
 
+	def list_branches(self, project_id: str | int):
+		return self.request("GET", f"projects/{project_id}/repository/branches", params={"per_page": 100})
+
 	def list_project_hooks(self, project_id: str | int):
 		return self.request("GET", f"projects/{project_id}/hooks")
 

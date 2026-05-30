@@ -10,6 +10,7 @@ from dinext_git.services.gitlab.matcher import resolve_keys
 from dinext_git.services.gitlab.store import (
 	build_artifact_link_payload,
 	build_artifact_payload,
+	mark_artifact_deleted,
 	upsert_artifact,
 	upsert_artifact_link,
 	write_event_log,
@@ -57,8 +58,28 @@ def _link_resolved_keys(artifact_name: str, resolved_docs: list[dict[str, Any]],
 		)
 
 
+def _is_zero_sha(value: str | None) -> bool:
+	return bool(value) and set(value) == {"0"}
+
+
+def is_branch_delete_push(payload: dict[str, Any]) -> bool:
+	after = payload.get("after")
+	checkout_sha = payload.get("checkout_sha")
+	return _is_zero_sha(after) or _is_zero_sha(checkout_sha)
+
+
 def normalize_push_event(instance: str, mapping: str | None, payload: dict[str, Any]) -> dict[str, Any]:
 	ref_name = (payload.get("ref") or "").split("/")[-1]
+	if is_branch_delete_push(payload):
+		branch_artifact = mark_artifact_deleted(
+			instance=instance,
+			mapping=mapping,
+			artifact_type="branch",
+			external_id=ref_name,
+			payload=payload,
+		)
+		return {"branch": branch_artifact, "commits": []}
+
 	resolved = resolve_keys(ref_name, *(commit.get("message") for commit in payload.get("commits", [])))
 
 	branch_artifact = upsert_artifact(

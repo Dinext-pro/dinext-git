@@ -6,6 +6,8 @@ from collections import defaultdict
 
 import frappe
 
+from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
+
 
 def run(filters: dict | None = None) -> list[dict]:
 	filters = filters or {}
@@ -25,6 +27,7 @@ def run(filters: dict | None = None) -> list[dict]:
 		],
 		order_by="modified desc",
 	)
+	artifacts = [row for row in artifacts if row.get("artifact_status") != DELETED_ARTIFACT_STATUS]
 	artifact_map = {row["name"]: row for row in artifacts}
 	links_by_target = defaultdict(list)
 	for link in links:

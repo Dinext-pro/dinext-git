@@ -98,10 +98,11 @@ def preview_branch(doctype: str, name: str, mapping_name: str | None = None) -> 
 
 
 def create_branch(doctype: str, name: str, mapping_name: str | None = None) -> dict[str, Any]:
+	user_token = _get_user_gitlab_branch_token()
 	preview = preview_branch(doctype, name, mapping_name)
 	doc = preview["work_item"]
 	mapping = get_mapping(preview["mapping"]["name"])
-	client = GitLabClient(mapping["gitlab_instance"], api_token=_get_user_gitlab_branch_token())
+	client = GitLabClient(mapping["gitlab_instance"], api_token=user_token)
 
 	project_id = mapping.get("gitlab_project_id")
 	if not project_id:
