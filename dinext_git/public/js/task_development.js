@@ -31,7 +31,7 @@ async function get_branch_preview(frm, { mappingName, branchTemplate, baseBranch
 	return response.message || {};
 }
 
-function set_base_branch_options(dialog, branchNames, selectedBranch) {
+async function set_base_branch_options(dialog, branchNames, selectedBranch) {
 	const field = dialog.get_field("base_branch");
 	if (!field) {
 		return;
@@ -39,7 +39,7 @@ function set_base_branch_options(dialog, branchNames, selectedBranch) {
 	field.df.options = branchNames || [];
 	field.refresh();
 	if (selectedBranch) {
-		dialog.set_value("base_branch", selectedBranch);
+		await dialog.set_value("base_branch", selectedBranch);
 	}
 }
 
@@ -150,14 +150,17 @@ async function open_create_branch_dialog(frm, payload) {
 				return;
 			}
 
-			dialog.set_value("branch_template", mappingOptions.branch_template || defaultBranchTemplate);
-			set_base_branch_options(
+			await dialog.set_value(
+				"branch_template",
+				mappingOptions.branch_template || defaultBranchTemplate
+			);
+			await set_base_branch_options(
 				dialog,
 				mappingOptions.available_base_branches || [],
 				mappingOptions.base_branch || defaultBaseBranch
 			);
 			dialog.__preview = mappingOptions.branch_preview || null;
-			dialog.set_value("branch_name_preview", dialog.__preview?.branch_name || "");
+			await dialog.set_value("branch_name_preview", dialog.__preview?.branch_name || "");
 			dialog.get_primary_btn().prop("disabled", !dialog.__preview);
 			set_dialog_help(dialog, dialog.__preview ? "" : __("Unable to build branch preview."));
 		} catch (error) {
@@ -231,7 +234,12 @@ async function open_create_branch_dialog(frm, payload) {
 	};
 
 	dialog.show();
-	set_base_branch_options(dialog, initialBaseBranches, defaultBaseBranch);
+	dialog.__preview = preview;
+	if (preview?.branch_name) {
+		await dialog.set_value("branch_name_preview", preview.branch_name);
+	}
+	dialog.get_primary_btn().prop("disabled", !preview);
+	await set_base_branch_options(dialog, initialBaseBranches, defaultBaseBranch);
 	if (options.length > 1) {
 		dialog.get_field("mapping_name").$input?.on("change", loadMappingOptions);
 	}

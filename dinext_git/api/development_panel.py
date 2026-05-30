@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import quote
+
 import frappe
 from frappe import _
 
@@ -13,7 +15,7 @@ from dinext_git.services.gitlab.panel_metadata import (
 	decorate_artifact_row,
 )
 from dinext_git.services.gitlab.projector import collect_work_item_summary
-from dinext_git.services.gitlab.store import get_default_mapping_for_project, get_mappings_for_project
+from dinext_git.services.gitlab.store import get_default_mapping_for_project, get_instance, get_mappings_for_project
 
 DEVELOPMENT_STATUS_LABELS = {
 	"not_started": _("Not started"),
@@ -89,6 +91,41 @@ def _get_allowed_types_for_doctype(project: str | None, doctype: str) -> tuple[b
 			continue
 		allowed.add(type_name)
 	return allow_all, allowed
+
+
+def _build_gitlab_project_tree_url(mapping: dict | None) -> str | None:
+	if not mapping:
+		return None
+
+	project_path = (mapping.get("gitlab_project_path") or "").strip()
+	instance_name = mapping.get("gitlab_instance")
+	if not project_path or not instance_name:
+		return None
+
+	try:
+		instance = get_instance(instance_name)
+	except Exception:
+		return None
+
+	base_url = (instance.get("base_url") or "").rstrip("/")
+	if not base_url:
+		return None
+
+	branch = (mapping.get("default_base_branch") or "develop").strip()
+	return f"{base_url}/{project_path}/-/tree/{quote(branch, safe='/')}"
+
+
+def _build_group_metadata(mapping: dict | None) -> dict:
+	default_base_branch = (mapping or {}).get("default_base_branch") or "develop" if mapping else None
+	return {
+		"mapping_name": (mapping or {}).get("name"),
+		"is_default": bool(mapping and mapping.get("is_default")),
+		"gitlab_project_path": (mapping or {}).get("gitlab_project_path") or _("Unmapped"),
+		"gitlab_instance": (mapping or {}).get("gitlab_instance"),
+		"default_base_branch": default_base_branch,
+		"gitlab_project_url": _build_gitlab_project_tree_url(mapping),
+		"artifacts_by_type": {},
+	}
 
 
 def _should_show_gitlab_tab(doctype: str, doc: dict, mappings: list[dict]) -> bool:
@@ -170,16 +207,9 @@ def _panel_payload(doctype: str, name: str) -> dict:
 		mapping_name = artifact.get("project_mapping")
 		mapping = mapping_lookup.get(mapping_name)
 		group_key = mapping_name or "unmapped"
-		group = grouped.setdefault(
-			group_key,
-			{
-				"mapping_name": mapping_name,
-				"is_default": bool(mapping and mapping.get("is_default")),
-				"gitlab_project_path": (mapping or {}).get("gitlab_project_path") or _("Unmapped"),
-				"gitlab_instance": (mapping or {}).get("gitlab_instance"),
-				"artifacts_by_type": {},
-			},
-		)
+		group = grouped.setdefault(group_key, _build_group_metadata(mapping))
+		if mapping_name:
+			group["mapping_name"] = mapping_name
 		group["artifacts_by_type"].setdefault(artifact["artifact_type"], []).append(artifact)
 
 	branch_preview = None
