@@ -19,11 +19,14 @@
 - ingest GitLab webhooks (`push`, `merge request`, `pipeline`, `tag push`, `release`) с event log и idempotent normalization
 - soft-delete синхронизация: удалённые в GitLab объекты помечаются в Dinext как `artifact_status = deleted` и исключаются из summary, вкладки Development и отчётов (история и связи сохраняются)
 - generic model артефактов разработки (`Development Artifact`, `Development Artifact Link`)
-- проекция dev summary в стандартные `Task` и `Issue`
+- проекция dev summary в стандартные `Task` и `Issue`, включая канонический `custom_git_development_status` (`Not started`, `In progress`, `Merged`, `Declined`, `Pipeline failed`, `Deployed`)
+- колонка и стандартный фильтр **Development Status** в list view `Task`/`Issue`; локализованные подписи через `doctype_list_js`
+- shared UI-модуль вкладки Development (`development_panel_ui.js`, `development_panel.css`): status pills, author chips, ссылки на GitLab project/MR, группировка артефактов по repository
 - configurable workflow automation через `Development Workflow Rule`
 - Development block на формах `Task` и `Issue`
 - Script Reports для traceability exceptions и release composition
-- Workspace **Разработки** — git-cockpit для команды: сводка по `custom_git_*`, предупреждения, отчёты и настройки интеграции (не дублирует «Мои задачи» / «Мои проекты» из `dinext_projects`)
+- Workspace **Разработки** — git-cockpit для команды: 12 Number Cards по `custom_git_development_status` и `custom_git_discrepancy_flags`, предупреждения, отчёты и настройки интеграции (не дублирует «Мои задачи» / «Мои проекты» из `dinext_projects`)
+- русская локализация UI и статусов через [`dinext_git/translations/ru.csv`](dinext_git/translations/ru.csv)
 - scheduled reconciliation и webhook health checks
 - миграция legacy Jira-style keys в `Development Key Alias`
 - meta-aware сопоставление Dinext key при ingest GitLab metadata: маски именования берутся из Meta `Task`/`Issue`, поддерживаются ручные имена и alias registry
@@ -120,13 +123,13 @@ bench --site your-site.local set-config developer_mode 1
 
 **Доступ:** роли `Dinext_User` и `System Manager`.
 
-**Поставка:** JSON [`dinext_git/dinext_git/workspace/разработки/разработки.json`](dinext_git/dinext_git/workspace/разработки/разработки.json) синхронизируется при `bench migrate`; Number Cards — через fixture [`dinext_git/fixtures/number_card.json`](dinext_git/fixtures/number_card.json).
+**Поставка:** JSON [`dinext_git/dinext_git/workspace/разработки/разработки.json`](dinext_git/dinext_git/workspace/разработки/разработки.json) и 12 Number Cards в [`dinext_git/dinext_git/number_card/`](dinext_git/dinext_git/number_card/) синхронизируются при `bench migrate` как module metadata.
 
 | Секция | Содержимое |
 |--------|------------|
-| **Сводка разработки** | 6 Number Cards: «В разработке», «Слито», «Развернуто» для `Task` и `Issue` |
-| **Предупреждения и исключения** | 4 Number Cards: расхождения и `pipeline failed` для `Task`/`Issue`; shortcuts на отчёты **GitLab Traceability Exceptions**, **GitLab Release Composition** и список **Development Artifact** |
-| **Отчёты и настройки** | Link cards: отчёты, артефакты, `GitLab Instance`, workflow rules, alias registry, event log, reconciliation |
+| **Сводка разработки** | 6 Number Cards по `custom_git_development_status`: «В разработке», «Слито», «Развернуто» для `Task` и `Issue` |
+| **Предупреждения и исключения** | 6 Number Cards: расхождения (`custom_git_discrepancy_flags`), «Отклонено» (`Declined`), `Pipeline failed` для `Task`/`Issue`; shortcuts на отчёты **GitLab Traceability Exceptions**, **GitLab Release Composition** и список **Development Artifact** |
+| **Отчёты и настройки** | Link cards: артефакты, `GitLab Instance`, workflow rules, alias registry, event log, reconciliation |
 
 Number Cards ведут на отфильтрованные списки `Task`/`Issue`. Детальный разбор исключений — через Script Reports и DocType **Development Artifact**.
 
@@ -185,7 +188,7 @@ bench --site your-site.local migrate
 | `branch_preview` | Server-side preview имени ветки для стартовых значений |
 | `branch_mapping_options` | Список mapping, если их несколько |
 
-UI-логика в [`task_development.js`](dinext_git/public/js/task_development.js) и [`issue_development.js`](dinext_git/public/js/issue_development.js):
+UI-логика в [`task_development.js`](dinext_git/public/js/task_development.js), [`issue_development.js`](dinext_git/public/js/issue_development.js) и shared-модуле [`development_panel_ui.js`](dinext_git/public/js/development_panel_ui.js):
 
 1. Диалог открывается с уже подставленными template и base branch.
 2. Поле **Branch naming template** — разовый override только для текущего создания; `GitLab Project Mapping.branch_naming_template` не меняется.
@@ -253,11 +256,29 @@ UI-логика в [`task_development.js`](dinext_git/public/js/task_development
 
 После `bench migrate` существующим правилам автоматически проставляется `target_fieldname = status`.
 
+### Development Status
+
+Поле `custom_git_development_status` на `Task`/`Issue` — read-only проекция из активных `Development Artifact`. Канонические значения Select (и фильтры Number Cards) заданы в [`constants.py`](dinext_git/services/gitlab/constants.py):
+
+| Статус | Когда выставляется |
+|--------|-------------------|
+| `Not started` | Нет активных артефактов |
+| `In progress` | Есть branch или открытый MR |
+| `Merged` | Есть merged MR |
+| `Declined` | Есть закрытый/отклонённый MR без open/merged |
+| `Pipeline failed` | Последний pipeline со статусом `failed` (перекрывает merged/in progress) |
+| `Deployed` | Последний deployment со статусом `success` (наивысший приоритет) |
+
+Расчёт выполняется в [`projector.py`](dinext_git/services/gitlab/projector.py); дополнительно проецируются `custom_git_discrepancy_flags`, `custom_git_artifact_count`, ссылки на filtered MR list в GitLab.
+
+Patch [`migrate_development_status_select_values`](dinext_git/patches/v0_0/migrate_development_status_select_values.py) переводит legacy machine-codes (`in_progress`, `merged`, …) в канонические подписи при upgrade.
+
 ### Upgrade notes
 
 - После `bench migrate` существующие `GitLab Project Mapping` автоматически привязываются к child table `Project.custom_git_project_mappings`.
 - Для enabled mapping автоматически выбирается один **Default Mapping**, если он не был задан ранее.
 - Поля webhook/reconciliation остаются на строках `GitLab Project Mapping`, но управляются из вкладки **Development** проекта.
+- Legacy значения `custom_git_development_status` (`in_progress`, `merged`, …) мигрируют в канонические Select labels через post-migrate patch.
 
 ### Вызов API
 
@@ -305,15 +326,15 @@ POST /api/method/dinext_git.api.gitlab_webhooks.receive
 - `doctype_js`:
   - `Task -> public/js/task_development.js`
   - `Issue -> public/js/issue_development.js`
+- `doctype_list_js`:
+  - `Task -> public/js/task_development_list.js`
+  - `Issue -> public/js/issue_development_list.js`
 - `scheduler_events`:
   - `hourly`: reconciliation и webhook health check
   - `daily`: reconciliation
-- экспорт fixtures для:
-  - `Custom Field`
-  - `Property Setter`
-  - `Client Script`
-  - `Report`
-  - `Number Card`
+- `default_log_clearing_doctypes`: `GitLab Event Log` — 30 дней
+- экспорт fixtures только для `Custom Field` модуля Dinext Git (`fixtures/custom_field.json`)
+- module metadata (синхронизируется через `bench migrate`): Workspace, Number Cards, Reports, DocTypes
 
 Приложение опирается на site metadata и export-fixtures, а не на переменные окружения.
 
@@ -386,14 +407,22 @@ bench --site your-site.local export-fixtures --app dinext_git
 - [`dinext_git/services/gitlab/matcher.py`](dinext_git/services/gitlab/matcher.py) — meta-aware извлечение и резолв Dinext key из GitLab metadata
 - [`dinext_git/services/gitlab/normalizer.py`](dinext_git/services/gitlab/normalizer.py) — нормализация webhook payload в артефакты
 - [`dinext_git/services/gitlab/reconcile.py`](dinext_git/services/gitlab/reconcile.py) — reconciliation и webhook health
-- [`dinext_git/public/js/task_development.js`](dinext_git/public/js/task_development.js) — UI вкладки Development на `Task`
-- [`dinext_git/public/js/issue_development.js`](dinext_git/public/js/issue_development.js) — UI вкладки Development на `Issue`
+- [`dinext_git/services/gitlab/constants.py`](dinext_git/services/gitlab/constants.py) — artifact types, development status values, webhook events, workflow events
+- [`dinext_git/services/gitlab/panel_metadata.py`](dinext_git/services/gitlab/panel_metadata.py) — author avatars, artifact decoration, timestamps для UI
+- [`dinext_git/public/js/development_panel_ui.js`](dinext_git/public/js/development_panel_ui.js) — shared UI: status pills, artifact list, GitLab project links
+- [`dinext_git/public/js/task_development_list.js`](dinext_git/public/js/task_development_list.js) — list view formatter для `custom_git_development_status` на `Task`
+- [`dinext_git/public/js/issue_development_list.js`](dinext_git/public/js/issue_development_list.js) — list view formatter для `Issue`
+- [`dinext_git/public/css/development_panel.css`](dinext_git/public/css/development_panel.css) — стили вкладки Development
+- [`dinext_git/translations/ru.csv`](dinext_git/translations/ru.csv) — русские переводы статусов и UI
 - [`dinext_git/dinext_git/doctype/gitlab_type_visibility_rule/gitlab_type_visibility_rule.json`](dinext_git/dinext_git/doctype/gitlab_type_visibility_rule/gitlab_type_visibility_rule.json) — child table правил видимости по типам
 - [`dinext_git/tests/test_development_panel_payload.py`](dinext_git/tests/test_development_panel_payload.py) — тесты payload и type visibility
 - [`dinext_git/tests/test_matcher.py`](dinext_git/tests/test_matcher.py) — тесты meta-aware key matching и webhook linking
 - [`dinext_git/dinext_git/workspace/разработки/разработки.json`](dinext_git/dinext_git/workspace/разработки/разработки.json) — Workspace **Разработки**
-- [`dinext_git/fixtures/number_card.json`](dinext_git/fixtures/number_card.json) — Number Cards для сводки и предупреждений
-- [`dinext_git/tests/test_development_workspace.py`](dinext_git/tests/test_development_workspace.py) — тесты структуры workspace и соответствия fixtures
+- [`dinext_git/dinext_git/number_card/`](dinext_git/dinext_git/number_card/) — 12 Number Cards для сводки и предупреждений
+- [`dinext_git/tests/test_development_workspace.py`](dinext_git/tests/test_development_workspace.py) — тесты структуры workspace и соответствия Number Cards
+- [`dinext_git/tests/test_dev_status_projection.py`](dinext_git/tests/test_dev_status_projection.py) — тесты расчёта `custom_git_development_status`
+- [`dinext_git/tests/test_workflow_sync.py`](dinext_git/tests/test_workflow_sync.py) — тесты `Development Workflow Rule`
+- [`dinext_git/tests/test_translations.py`](dinext_git/tests/test_translations.py) — валидация переводимых строк
 
 ## ❤️ Благодарности
 

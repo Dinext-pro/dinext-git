@@ -31,7 +31,7 @@ class TestDevelopmentWorkspace(FrappeTestCase):
 		payload = json.loads(WORKSPACE_JSON.read_text(encoding="utf-8"))
 		self.assertEqual(payload["label"], "Разработки")
 		self.assertEqual(payload["module"], "Dinext Git")
-		self.assertEqual(len(payload["number_cards"]), 10)
+		self.assertEqual(len(payload["number_cards"]), 12)
 		self.assertEqual(len(payload["quick_lists"]), 0)
 		report_links = {
 			link["link_to"] for link in payload["links"] if link.get("type") == "Link" and link.get("link_type") == "Report"

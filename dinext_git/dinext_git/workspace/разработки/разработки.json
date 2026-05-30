@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"hdr-summary\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h3\\\"><b>Development summary</b></span>\",\"col\":12}},{\"id\":\"nc-tasks-ip\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Git Dev Tasks In Progress\",\"col\":4}},{\"id\":\"nc-tasks-mer\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Git Dev Tasks Merged\",\"col\":4}},{\"id\":\"nc-tasks-dep\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Git Dev Tasks Deployed\",\"col\":4}},{\"id\":\"nc-issues-ip\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Git Dev Issues In Progress\",\"col\":4}},{\"id\":\"L-cOTNMAQ-\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"\\u0417\\u0430\\u043f\\u0440\\u043e\\u0441\\u044b - \\u0441\\u043b\\u0438\\u0442\\u043e\",\"col\":4}},{\"id\":\"RWRo-7AOjr\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"\\u0420\\u0430\\u0437\\u0432\\u0435\\u0440\\u043d\\u0443\\u0442\\u043e \\u2014 \\u0437\\u0430\\u043f\\u0440\\u043e\\u0441\\u044b\",\"col\":4}},{\"id\":\"sp1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"hdr-warn\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Warnings and exceptions</b></span>\",\"col\":12}},{\"id\":\"nc-tasks-disc\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Git Dev Tasks Discrepancies\",\"col\":3}},{\"id\":\"nc-issues-disc\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Git Dev Issues Discrepancies\",\"col\":3}},{\"id\":\"nc-tasks-pf\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Git Dev Tasks Pipeline Failed\",\"col\":3}},{\"id\":\"nc-issues-pf\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Git Dev Issues Pipeline Failed\",\"col\":3}},{\"id\":\"P9fWVLw28k\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"sc-exceptions\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"GitLab Traceability Exceptions\",\"col\":4}},{\"id\":\"sc-release\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"GitLab Release Composition\",\"col\":4}},{\"id\":\"sc-artifacts\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Development Artifact\",\"col\":4}},{\"id\":\"sp2\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"yAce1sipM6\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"hdr-masters\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports and settings</b></span>\",\"col\":12}},{\"id\":\"card-exceptions\",\"type\":\"card\",\"data\":{\"card_name\":\"Exceptions and releases\",\"col\":4}}]",
+ "content": "[{\"id\":\"hdr-summary\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h3\\\"><b>\u0421\u0432\u043e\u0434\u043a\u0430 \u0440\u0430\u0437\u0440\u0430\u0431\u043e\u0442\u043a\u0438</b></span>\",\"col\":12}},{\"id\":\"nc-tasks-ip\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"\u0412 \u0440\u0430\u0437\u0440\u0430\u0431\u043e\u0442\u043a\u0435 \u2014 \u0437\u0430\u0434\u0430\u0447\u0438\",\"col\":4}},{\"id\":\"nc-tasks-mer\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"\u0421\u043b\u0438\u0442\u043e \u2014 \u0417\u0430\u0434\u0430\u0447\u0438\",\"col\":4}},{\"id\":\"nc-tasks-dep\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u043e \u2014 \u0437\u0430\u0434\u0430\u0447\u0438\",\"col\":4}},{\"id\":\"nc-issues-ip\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"\u0412 \u0440\u0430\u0437\u0440\u0430\u0431\u043e\u0442\u043a\u0435 \u2014 \u0437\u0430\u043f\u0440\u043e\u0441\u044b\",\"col\":4}},{\"id\":\"L-cOTNMAQ-\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"\u0421\u043b\u0438\u0442\u043e  \u2014 \u0417\u0430\u043f\u0440\u043e\u0441\u044b\",\"col\":4}},{\"id\":\"RWRo-7AOjr\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u043e \u2014 \u0437\u0430\u043f\u0440\u043e\u0441\u044b\",\"col\":4}},{\"id\":\"sp1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"hdr-warn\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>\u041f\u0440\u0435\u0434\u0443\u043f\u0440\u0435\u0436\u0434\u0435\u043d\u0438\u044f \u0438 \u0438\u0441\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f</b></span>\",\"col\":12}},{\"id\":\"nc-tasks-disc\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"\u0417\u0430\u0434\u0430\u0447\u0438 \u0441 \u0440\u0430\u0441\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f\u043c\u0438\",\"col\":4}},{\"id\":\"pE53j2_0u-\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"\u041e\u0442\u043a\u043b\u043e\u043d\u0435\u043d\u043e \u2014 \u0437\u0430\u0434\u0430\u0447\u0438\",\"col\":4}},{\"id\":\"nc-tasks-pf\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Pipeline failed \u2014 \u0437\u0430\u0434\u0430\u0447\u0438\",\"col\":4}},{\"id\":\"nc-issues-disc\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"\u0417\u0430\u043f\u0440\u043e\u0441\u044b \u0441 \u0440\u0430\u0441\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f\u043c\u0438\",\"col\":4}},{\"id\":\"czq13DJrWG\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"\u041e\u0442\u043a\u043b\u043e\u043d\u0435\u043d\u043e \u2014 \u0437\u0430\u043f\u0440\u043e\u0441\u044b\",\"col\":4}},{\"id\":\"nc-issues-pf\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Pipeline failed \u2014 \u0437\u0430\u043f\u0440\u043e\u0441\u044b\",\"col\":4}},{\"id\":\"P9fWVLw28k\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"sc-exceptions\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"\u0418\u0441\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f traceability\",\"col\":4}},{\"id\":\"sc-release\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"\u0421\u043e\u0441\u0442\u0430\u0432 \u0440\u0435\u043b\u0438\u0437\u0430\",\"col\":4}},{\"id\":\"sc-artifacts\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"\u0410\u0440\u0442\u0435\u0444\u0430\u043a\u0442\u044b \u0440\u0430\u0437\u0440\u0430\u0431\u043e\u0442\u043a\u0438\",\"col\":4}},{\"id\":\"sp2\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"yAce1sipM6\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"hdr-masters\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>\u041e\u0442\u0447\u0451\u0442\u044b \u0438 \u043d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438</b></span>\",\"col\":12}},{\"id\":\"card-exceptions\",\"type\":\"card\",\"data\":{\"card_name\":\"\u0418\u0441\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f \u0438 \u0440\u0435\u043b\u0438\u0437\u044b\",\"col\":4}}]",
  "creation": "2026-05-30 20:00:00",
  "custom_blocks": [],
  "docstatus": 0,
@@ -16,7 +16,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Exceptions and releases",
+   "label": "\u0418\u0441\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f \u0438 \u0440\u0435\u043b\u0438\u0437\u044b",
    "link_count": 7,
    "link_type": "DocType",
    "onboard": 0,
@@ -100,49 +100,57 @@
    "type": "Link"
   }
  ],
- "modified": "2026-05-31 01:55:11.134891",
+ "modified": "2026-05-31 02:33:02.467874",
  "modified_by": "Administrator",
  "module": "Dinext Git",
  "name": "\u0420\u0430\u0437\u0440\u0430\u0431\u043e\u0442\u043a\u0438",
  "number_cards": [
   {
-   "label": "Merged — Tasks",
+   "label": "\u041e\u0442\u043a\u043b\u043e\u043d\u0435\u043d\u043e \u2014 \u0437\u0430\u0434\u0430\u0447\u0438",
+   "number_card_name": "Git Dev Tasks Declined"
+  },
+  {
+   "label": "\u0421\u043b\u0438\u0442\u043e \u2014 \u0417\u0430\u0434\u0430\u0447\u0438",
    "number_card_name": "Git Dev Tasks Merged"
   },
   {
-   "label": "Tasks with discrepancies",
+   "label": "\u0417\u0430\u0434\u0430\u0447\u0438 \u0441 \u0440\u0430\u0441\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f\u043c\u0438",
    "number_card_name": "Git Dev Tasks Discrepancies"
   },
   {
-   "label": "Deployed — Issues",
-   "number_card_name": "Развернуто — запросы"
+   "label": "\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u043e \u2014 \u0437\u0430\u043f\u0440\u043e\u0441\u044b",
+   "number_card_name": "\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u043e \u2014 \u0437\u0430\u043f\u0440\u043e\u0441\u044b"
   },
   {
-   "label": "Merged — Issues",
-   "number_card_name": "Запросы - слито"
+   "label": "\u041e\u0442\u043a\u043b\u043e\u043d\u0435\u043d\u043e \u2014 \u0437\u0430\u043f\u0440\u043e\u0441\u044b",
+   "number_card_name": "Git Dev Issues Declined"
   },
   {
-   "label": "Issues with discrepancies",
+   "label": "\u0421\u043b\u0438\u0442\u043e  \u2014 \u0417\u0430\u043f\u0440\u043e\u0441\u044b",
+   "number_card_name": "\u0417\u0430\u043f\u0440\u043e\u0441\u044b - \u0441\u043b\u0438\u0442\u043e"
+  },
+  {
+   "label": "\u0417\u0430\u043f\u0440\u043e\u0441\u044b \u0441 \u0440\u0430\u0441\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044f\u043c\u0438",
    "number_card_name": "Git Dev Issues Discrepancies"
   },
   {
-   "label": "Pipeline failed — Tasks",
+   "label": "Pipeline failed \u2014 \u0437\u0430\u0434\u0430\u0447\u0438",
    "number_card_name": "Git Dev Tasks Pipeline Failed"
   },
   {
-   "label": "Pipeline failed — Issues",
+   "label": "Pipeline failed \u2014 \u0437\u0430\u043f\u0440\u043e\u0441\u044b",
    "number_card_name": "Git Dev Issues Pipeline Failed"
   },
   {
-   "label": "In progress — Tasks",
+   "label": "\u0412 \u0440\u0430\u0437\u0440\u0430\u0431\u043e\u0442\u043a\u0435 \u2014 \u0437\u0430\u0434\u0430\u0447\u0438",
    "number_card_name": "Git Dev Tasks In Progress"
   },
   {
-   "label": "In progress — Issues",
+   "label": "\u0412 \u0440\u0430\u0437\u0440\u0430\u0431\u043e\u0442\u043a\u0435 \u2014 \u0437\u0430\u043f\u0440\u043e\u0441\u044b",
    "number_card_name": "Git Dev Issues In Progress"
   },
   {
-   "label": "Deployed — Tasks",
+   "label": "\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u043e \u2014 \u0437\u0430\u0434\u0430\u0447\u0438",
    "number_card_name": "Git Dev Tasks Deployed"
   }
  ],
@@ -163,7 +171,7 @@
   {
    "color": "Red",
    "doc_view": "List",
-   "label": "GitLab Traceability Exceptions",
+   "label": "\u0418\u0441\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f traceability",
    "link_to": "GitLab Traceability Exceptions",
    "report_ref_doctype": "Development Artifact",
    "type": "Report"
@@ -171,7 +179,7 @@
   {
    "color": "Blue",
    "doc_view": "List",
-   "label": "GitLab Release Composition",
+   "label": "\u0421\u043e\u0441\u0442\u0430\u0432 \u0440\u0435\u043b\u0438\u0437\u0430",
    "link_to": "GitLab Release Composition",
    "report_ref_doctype": "Development Artifact",
    "type": "Report"
@@ -179,7 +187,7 @@
   {
    "color": "Grey",
    "doc_view": "List",
-   "label": "Development Artifact",
+   "label": "\u0410\u0440\u0442\u0435\u0444\u0430\u043a\u0442\u044b \u0440\u0430\u0437\u0440\u0430\u0431\u043e\u0442\u043a\u0438",
    "link_to": "Development Artifact",
    "type": "DocType"
   }
