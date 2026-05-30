@@ -279,8 +279,6 @@ frappe.ui.form.on("Issue", {
 			showButton: Boolean(payload.can_create_branch),
 		});
 		const summary = payload.summary || {};
-		const preview = payload.branch_preview || null;
-		const showBranchMappingDetails = Boolean(payload.show_branch_mapping_details);
 		const artifacts = Object.values(payload.grouped_artifacts || {})
 			.map((group) => {
 				const typeSections = Object.entries(group.artifacts_by_type || {})
@@ -311,23 +309,10 @@ frappe.ui.form.on("Issue", {
 				? ` <a href="${summary.status_merge_request_url}" target="_blank" rel="noopener noreferrer" title="${statusCountTitle}">(${statusCount})</a>`
 				: ` <span class="text-muted" title="${statusCountTitle}">(${statusCount})</span>`
 			: "";
-		const previewBlock = preview
-			? `<div class="mb-3 text-muted">
-				<div><strong>${__("Branch preview")}:</strong> <code>${preview.branch_name}</code></div>
-				${
-					showBranchMappingDetails
-						? `<div><strong>${__("GitLab project")}:</strong> ${preview.mapping?.gitlab_project_path || "-"}</div>`
-						: ""
-				}
-				<div><strong>${__("Base branch")}:</strong> <code>${preview.base_branch}</code></div>
-			</div>`
-			: "";
-
 		panel.$wrapper.html(
 			`<div class="dinext-git-development">
 				<p><strong>${__("Development status")}:</strong> ${summary.development_status_label || __("Not started")}${statusCountMarkup}</p>
 				${flags ? `<div class="mb-2">${flags}</div>` : ""}
-				${previewBlock}
 				${artifacts || `<p class="text-muted">${payload.empty_state_message || __("No development activity yet.")}</p>`}
 			</div>`
 		);
