@@ -309,3 +309,15 @@ class TestDevelopmentPanelPayload(FrappeTestCase):
 		payload = get_panel("Issue", issue)
 
 		self.assertTrue(payload["show_gitlab_tab"])
+
+	def test_task_dashboard_has_no_development_links(self):
+		transactions = frappe.get_meta("Task").get_dashboard_data().transactions
+		items = [item for group in transactions for item in group.get("items", [])]
+		self.assertNotIn("Development Artifact", items)
+		self.assertNotIn("Development Artifact Link", items)
+
+	def test_issue_dashboard_has_no_development_links(self):
+		transactions = frappe.get_meta("Issue").get_dashboard_data().transactions
+		items = [item for group in transactions for item in group.get("items", [])]
+		self.assertNotIn("Development Artifact", items)
+		self.assertNotIn("Development Artifact Link", items)

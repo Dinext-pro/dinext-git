@@ -223,11 +223,3 @@ def _panel_payload(doctype: str, name: str) -> dict:
 @frappe.whitelist()
 def get_panel(doctype: str, name: str):
 	return _panel_payload(doctype, name)
-
-
-def get_task_dashboard_data(data=None):
-	return {"transactions": [{"label": _("Development"), "items": ["Development Artifact", "Development Artifact Link"]}]}
-
-
-def get_issue_dashboard_data(data=None):
-	return {"transactions": [{"label": _("Development"), "items": ["Development Artifact", "Development Artifact Link"]}]}
