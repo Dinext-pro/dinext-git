@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from urllib.parse import quote
+
 import frappe
 from frappe import _
 
@@ -110,7 +112,8 @@ def create_branch(doctype: str, name: str, mapping_name: str | None = None) -> d
 	try:
 		branch_data = client.create_branch(project_id, preview["branch_name"], preview["base_branch"])
 	except Exception:
-		if client.request("GET", f"projects/{project_id}/repository/branches/{preview['branch_name']}"):
+		encoded_branch = quote(preview["branch_name"], safe="")
+		if client.request("GET", f"projects/{project_id}/repository/branches/{encoded_branch}"):
 			branch_data = {
 				"name": preview["branch_name"],
 				"web_url": f"{client.base_url}/{mapping['gitlab_project_path']}/-/tree/{preview['branch_name']}",
