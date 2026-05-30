@@ -10,9 +10,26 @@ from frappe import _
 from dinext_git.services.gitlab.client import GitLabClient
 from dinext_git.services.gitlab.store import get_instance, get_mapping
 
+WEBHOOK_RECEIVE_PATH = "/api/method/dinext_git.api.gitlab_webhooks.receive"
+
+
+def normalize_public_webhook_url(url: str) -> str:
+	"""Prefer HTTPS for public callback URLs so GitLab does not depend on HTTP redirects."""
+	url = (url or "").strip()
+	if url.startswith("http://") and "localhost" not in url and "127.0.0.1" not in url:
+		return f"https://{url[len('http://'):]}"
+	return url
+
+
+def resolve_webhook_callback_url(mapping: dict[str, Any] | None = None) -> str:
+	callback_url = (mapping or {}).get("webhook_callback_url")
+	if callback_url:
+		return normalize_public_webhook_url(callback_url)
+	return normalize_public_webhook_url(f"{frappe.utils.get_url()}{WEBHOOK_RECEIVE_PATH}")
+
 
 def desired_hook_payload(mapping: dict[str, Any], instance: dict[str, Any]) -> dict[str, Any]:
-	endpoint = f"{frappe.utils.get_url()}/api/method/dinext_git.api.gitlab_webhooks.receive"
+	endpoint = resolve_webhook_callback_url(mapping)
 	secret = instance["webhook_secret"]
 	return {
 		"url": endpoint,

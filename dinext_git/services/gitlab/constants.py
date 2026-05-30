@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+import frappe
+
 ARTIFACT_TYPES = (
 	"branch",
 	"commit",
@@ -14,6 +18,18 @@ ARTIFACT_TYPES = (
 )
 
 DELETED_ARTIFACT_STATUS = "deleted"
+
+
+def find_non_deleted_artifact_name(base_filters: dict[str, Any]) -> str | None:
+	"""Return a Development Artifact name matching filters and not tombstoned."""
+	for status_filter in (
+		{"artifact_status": ["is", "not set"]},
+		{"artifact_status": ["!=", DELETED_ARTIFACT_STATUS]},
+	):
+		name = frappe.db.get_value("Development Artifact", {**base_filters, **status_filter}, "name")
+		if name:
+			return name
+	return None
 
 WEBHOOK_EVENTS = (
 	"push",
