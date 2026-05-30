@@ -8,3 +8,4 @@ dinext_git.patches.v0_0.bootstrap_dev_fields
 dinext_git.patches.v0_0.bootstrap_legacy_alias_types
 dinext_git.patches.v0_0.migrate_legacy_jira_aliases
 dinext_git.patches.v0_0.backfill_project_mapping_defaults
+dinext_git.patches.v0_0.remove_gitlab_mapping_customizations

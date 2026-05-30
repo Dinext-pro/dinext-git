@@ -79,7 +79,7 @@ bench --site your-site.local set-config developer_mode 1
 5. Из Dinext вызовите webhook admin action (`sync` / `verify`) для регистрации или восстановления хука.
 6. Каждый разработчик, который использует **Create Branch**, должен заполнить в своём `User` поле **GitLab Branch Token**.
 
-Системные поля строк `GitLab Project Mapping` (`webhook_status`, `webhook_last_error`, `last_reconciled_*` и др.) управляются приложением и доступны только для чтения.
+Системные поля строк `GitLab Project Mapping` (`webhook_status`, `webhook_last_error`, `last_reconciled_*` и др.) управляются приложением и доступны только для чтения. Свойства полей (`read_only`, `hidden`, `is_default` и т.д.) задаются в самом DocType `GitLab Project Mapping`, а не через `Property Setter` / `Custom Field` на этом доктайпе.
 
 ### Требуемые GitLab token scopes
 
@@ -164,6 +164,8 @@ POST /api/method/dinext_git.api.gitlab_webhooks.receive
 1. изменить `DocType`, `Custom Field`, `Property Setter`, `Client Script`, `Report` в системе;
 2. выполнить `bench --site <site> migrate` при необходимости;
 3. синхронизировать репозиторий через `bench --site <site> export-fixtures --app dinext_git`.
+
+Для `GitLab Project Mapping` изменения полей вносятся в DocType (`dinext_git/doctype/gitlab_project_mapping/gitlab_project_mapping.json`), а не через кастомизацию этого доктайпа.
 
 **Нельзя** редактировать `fixtures/*.json` вручную.
 
