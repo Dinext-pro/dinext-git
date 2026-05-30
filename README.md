@@ -23,6 +23,7 @@
 - configurable workflow automation через `Development Workflow Rule`
 - Development block на формах `Task` и `Issue`
 - Script Reports для traceability exceptions и release composition
+- Workspace **Разработки** — git-cockpit для команды: сводка по `custom_git_*`, предупреждения, отчёты и настройки интеграции (не дублирует «Мои задачи» / «Мои проекты» из `dinext_projects`)
 - scheduled reconciliation и webhook health checks
 - миграция legacy Jira-style keys в `Development Key Alias`
 - meta-aware сопоставление Dinext key при ingest GitLab metadata: маски именования берутся из Meta `Task`/`Issue`, поддерживаются ручные имена и alias registry
@@ -35,6 +36,8 @@
 | Gantt, burndown, story points | `dinext_project_tasks_gantt` |
 | Stage-gate, scope, P&L | `dinext_project_stage_gate`, `dinext_project_scope`, `dinext_projects_pl` |
 | Git/GitLab traceability, dev workflow | **Dinext Git** |
+| Личные списки задач и проектов (`Мои задачи`, `Мои проекты`) | `dinext_projects` |
+| Сводка Git-разработки, исключения traceability, release composition | **Dinext Git** (Workspace **Разработки**) |
 
 ## 🚀 Установка
 
@@ -109,6 +112,32 @@ bench --site your-site.local set-config developer_mode 1
 7. Если у проекта несколько GitLab mapping, Dinext использует **Default Mapping** для initial preview; при нескольких mapping без default — первый enabled mapping. В диалоге можно выбрать другой repository.
 8. Рекомендуемая конвенция именования: ветка, MR title и commit message должны содержать **Dinext key** (фактический `name` work item).
 9. Legacy Jira keys и другие альтернативные идентификаторы резолвятся через `Development Key Alias`; canonical reference для новых артефактов — Dinext key.
+10. Для обзора команды и тимлида используйте Workspace **Разработки** в модуле Dinext Git (см. ниже).
+
+### Workspace «Разработки»
+
+Стандартный Frappe Workspace — единая точка входа в Git/traceability-контекст. Он **не заменяет** workspace'ы `dinext_projects` для личной работы с задачами и проектами; здесь только агрегированная картина разработки по полям `custom_git_development_status`, `custom_git_discrepancy_flags` и `custom_git_artifact_count` на `Task`/`Issue`.
+
+**Доступ:** роли `Dinext_User` и `System Manager`.
+
+**Поставка:** JSON [`dinext_git/dinext_git/workspace/разработки/разработки.json`](dinext_git/dinext_git/workspace/разработки/разработки.json) синхронизируется при `bench migrate`; Number Cards — через fixture [`dinext_git/fixtures/number_card.json`](dinext_git/fixtures/number_card.json).
+
+| Секция | Содержимое |
+|--------|------------|
+| **Сводка разработки** | 6 Number Cards: «В разработке», «Слито», «Развернуто» для `Task` и `Issue` |
+| **Предупреждения и исключения** | 4 Number Cards: расхождения и `pipeline failed` для `Task`/`Issue`; shortcuts на отчёты **GitLab Traceability Exceptions**, **GitLab Release Composition** и список **Development Artifact** |
+| **Отчёты и настройки** | Link cards: отчёты, артефакты, `GitLab Instance`, workflow rules, alias registry, event log, reconciliation |
+
+Number Cards ведут на отфильтрованные списки `Task`/`Issue`. Детальный разбор исключений — через Script Reports и DocType **Development Artifact**.
+
+**v2 (не в первой поставке):** dashboard charts, custom dev board block, дополнительные KPI.
+
+После установки или обновления приложения:
+
+```bash
+bench --site your-site.local install-app dinext_git   # если приложение ещё не установлено
+bench --site your-site.local migrate
+```
 
 ### Сопоставление Dinext key (GitLab → Dinext)
 
@@ -284,6 +313,7 @@ POST /api/method/dinext_git.api.gitlab_webhooks.receive
   - `Property Setter`
   - `Client Script`
   - `Report`
+  - `Number Card`
 
 Приложение опирается на site metadata и export-fixtures, а не на переменные окружения.
 
@@ -361,6 +391,9 @@ bench --site your-site.local export-fixtures --app dinext_git
 - [`dinext_git/dinext_git/doctype/gitlab_type_visibility_rule/gitlab_type_visibility_rule.json`](dinext_git/dinext_git/doctype/gitlab_type_visibility_rule/gitlab_type_visibility_rule.json) — child table правил видимости по типам
 - [`dinext_git/tests/test_development_panel_payload.py`](dinext_git/tests/test_development_panel_payload.py) — тесты payload и type visibility
 - [`dinext_git/tests/test_matcher.py`](dinext_git/tests/test_matcher.py) — тесты meta-aware key matching и webhook linking
+- [`dinext_git/dinext_git/workspace/разработки/разработки.json`](dinext_git/dinext_git/workspace/разработки/разработки.json) — Workspace **Разработки**
+- [`dinext_git/fixtures/number_card.json`](dinext_git/fixtures/number_card.json) — Number Cards для сводки и предупреждений
+- [`dinext_git/tests/test_development_workspace.py`](dinext_git/tests/test_development_workspace.py) — тесты структуры workspace и соответствия fixtures
 
 ## ❤️ Благодарности
 
@@ -377,6 +410,7 @@ bench --site your-site.local export-fixtures --app dinext_git
 - **Type visibility rules** — child table `GitLab Type Visibility Rules` ограничивает показ вкладки Development по типам `Task`/`Issue`; пустой тип в правиле означает «разрешить все типы» для соответствующего DocType.
 - **Soft-delete sync** — удаление branch в GitLab через delete-push webhook или reconciliation orphan detection; tombstone `artifact_status = deleted`, исключение из summary, вкладки Development и отчётов.
 - **Meta-aware key matching** — GitLab → Dinext резолв work item по Meta naming settings `Task`/`Issue`, ручным именам, generic token fallback и `Development Key Alias`; Create Branch по-прежнему использует фактический `doc.name`.
+- **Workspace «Разработки»** — git-cockpit с Number Cards по Git-статусам и предупреждениям, shortcuts на traceability/release reports и link cards для настройки интеграции; read-доступ для `Dinext_User` к отчётам и артефактам.
 
 ## 🗂️ Структура репозитория
 
@@ -398,6 +432,7 @@ bench --site your-site.local export-fixtures --app dinext_git
     ├── fixtures/
     │   ├── client_script.json
     │   ├── custom_field.json
+    │   ├── number_card.json
     │   ├── property_setter.json
     │   └── report.json
     ├── patches/v0_0/
@@ -422,6 +457,7 @@ bench --site your-site.local export-fixtures --app dinext_git
     ├── tests/
     │   ├── test_branch_actions.py
     │   ├── test_development_panel_payload.py
+    │   ├── test_development_workspace.py
     │   ├── test_dev_status_projection.py
     │   ├── test_gitlab_webhook_ingest.py
     │   ├── test_legacy_alias_migration.py
@@ -430,6 +466,9 @@ bench --site your-site.local export-fixtures --app dinext_git
     │   ├── test_traceability_reports.py
     │   └── test_utils.py
     └── dinext_git/
+        ├── workspace/
+        │   └── разработки/
+        │       └── разработки.json
         ├── doctype/
         │   ├── development_artifact/
         │   ├── development_artifact_link/
@@ -496,6 +535,7 @@ flowchart LR
 3. GitLab шлёт webhook в Dinext; normalizer создаёт, обновляет или помечает `deleted` для `Development Artifact` и поддерживает связи с work item.
 4. Reconciliation и webhook health jobs догоняют расхождения между GitLab и Dinext, в том числе ветки, удалённые в GitLab без доставленного webhook.
 5. UI формы запрашивает payload у `development_panel.get_panel` и отображает только активные artifacts, summary и branch actions; диалог **Create Branch** использует `gitlab_branches.options`, `preview` и `create`.
+6. Workspace **Разработки** показывает агрегированную сводку по Git-полям на `Task`/`Issue`, предупреждения и быстрый переход к traceability/release reports и настройкам интеграции.
 
 ## Проверка и отладка
 
@@ -581,7 +621,19 @@ bench --site your-site.local export-fixtures --app dinext_git
 - нет ли blank rule для соответствующего DocType, который разрешает все типы
 - ответ `show_gitlab_tab` в payload `development_panel.get_panel`
 
+### Если Workspace «Разработки» не виден или пустой
+
+Проверьте:
+
+- установлено ли приложение `dinext_git` на сайте (`bench --site <site> list-apps`);
+- выполнен ли `bench --site <site> migrate` после обновления репозитория;
+- есть ли у пользователя роль `Dinext_User` или `System Manager`;
+- в Desk → Workspace существует запись **Разработки** модуля Dinext Git;
+- Number Cards из fixture `number_card.json` импортированы (модуль Dinext Git).
+
 ## Отчёты
+
+Отчёты доступны из Workspace **Разработки**, из link cards и напрямую из модуля Dinext Git. Роль `Dinext_User` имеет read-доступ к обоим Script Reports.
 
 - **GitLab Traceability Exceptions**
   - tasks without MR

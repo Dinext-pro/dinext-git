@@ -11,33 +11,7 @@ fixtures = [
 		"filters": [
 			["module", "=", "Dinext Git"],
 		],
-	},
-	{
-		"doctype": "Property Setter",
-		"filters": [
-			["module", "=", "Dinext Git"],
-		],
-	},
-	{
-		"doctype": "Client Script",
-		"filters": [
-			["module", "=", "Dinext Git"],
-			["enabled", "=", 1],
-		],
-	},
-	{
-		"doctype": "Report",
-		"filters": [
-			["module", "=", "Dinext Git"],
-			["disabled", "=", 0],
-		],
-	},
-	{
-		"doctype": "Number Card",
-		"filters": [
-			["module", "=", "Dinext Git"],
-		],
-	},
+	}
 ]
 
 # Apps
