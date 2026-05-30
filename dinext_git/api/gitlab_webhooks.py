@@ -5,6 +5,7 @@ from __future__ import annotations
 import frappe
 
 from dinext_git.services.gitlab.normalizer import (
+	is_branch_delete_push,
 	log_event,
 	normalize_merge_request_event,
 	normalize_pipeline_event,
@@ -80,9 +81,11 @@ def receive():
 	)
 
 	normalized = {}
+	event_name = None
 	if event_type == "Push Hook":
 		normalized = normalize_push_event(instance_name, mapping["name"] if mapping else None, payload)
-		event_name = "branch_linked"
+		if not is_branch_delete_push(payload):
+			event_name = "branch_linked"
 	elif event_type == "Merge Request Hook":
 		normalized = normalize_merge_request_event(instance_name, mapping["name"] if mapping else None, payload)
 		attrs = payload.get("object_attributes") or {}
@@ -102,7 +105,8 @@ def receive():
 		)
 	for link in links:
 		update_work_item_summary(link["target_doctype"], link["target_name"])
-		apply_rules(link["target_doctype"], link["target_name"], event_name)
+		if event_name:
+			apply_rules(link["target_doctype"], link["target_name"], event_name)
 
 	frappe.db.set_value(
 		"GitLab Event Log",

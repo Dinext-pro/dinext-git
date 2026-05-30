@@ -7,6 +7,7 @@ from typing import Any
 import frappe
 from frappe import _
 
+from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
 from dinext_git.services.gitlab.utils import json_dumps, make_uid
 
 
@@ -154,6 +155,26 @@ def upsert_artifact(payload: dict[str, Any]) -> str:
 	return doc.name
 
 
+def mark_artifact_deleted(
+	*,
+	instance: str,
+	mapping: str | None,
+	artifact_type: str,
+	external_id: str,
+	payload: dict[str, Any] | None = None,
+) -> str | None:
+	artifact_uid = make_uid(instance, mapping, artifact_type, external_id)
+	existing_name = frappe.db.get_value("Development Artifact", {"artifact_uid": artifact_uid}, "name")
+	if not existing_name:
+		return None
+
+	values: dict[str, Any] = {"artifact_status": DELETED_ARTIFACT_STATUS}
+	if payload is not None:
+		values["payload_json"] = json_dumps(payload)
+	frappe.db.set_value("Development Artifact", existing_name, values, update_modified=True)
+	return existing_name
+
+
 def upsert_artifact_link(payload: dict[str, Any]) -> str:
 	link_uid = payload["link_uid"]
 	existing_name = frappe.db.get_value("Development Artifact Link", {"link_uid": link_uid}, "name")
@@ -212,6 +233,7 @@ def build_artifact_link_payload(
 		"artifact": artifact,
 		"target_doctype": target_doctype,
 		"target_name": target_name,
+		"project": frappe.db.get_value(target_doctype, target_name, "project"),
 		"link_source": link_source,
 		"extracted_key": extracted_key,
 		"is_primary": is_primary,

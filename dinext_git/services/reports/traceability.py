@@ -7,6 +7,8 @@ from collections import defaultdict
 import frappe
 from frappe import _
 
+from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
+
 
 EXCEPTION_MODES = {
 	"tasks_without_mr",
@@ -30,6 +32,7 @@ def run(mode: str, filters: dict | None = None) -> list[dict]:
 		"Development Artifact",
 		fields=["name", "artifact_type", "artifact_status", "artifact_name", "web_url", "ref_name"],
 	)
+	artifacts = [row for row in artifacts if row.get("artifact_status") != DELETED_ARTIFACT_STATUS]
 	artifact_map = {row["name"]: row for row in artifacts}
 	links_by_target = defaultdict(list)
 	links_by_artifact = defaultdict(list)
@@ -40,7 +43,7 @@ def run(mode: str, filters: dict | None = None) -> list[dict]:
 	rows: list[dict] = []
 	if mode == "tasks_without_mr":
 		for task in frappe.get_all("Task", fields=["name", "subject", "project", "status"]):
-			task_links = links_by_target.get(("Task", task["name"]), [])
+			task_links = [link for link in links_by_target.get(("Task", task["name"]), []) if artifact_map.get(link["artifact"])]
 			has_mr = any(artifact_map.get(link["artifact"], {}).get("artifact_type") == "merge_request" for link in task_links)
 			if task_links and not has_mr:
 				rows.append(task)

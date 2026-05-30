@@ -16,6 +16,7 @@
 - персональные GitLab token на уровне `User` для `Create Branch` без fallback на system token
 - автоматическая регистрация, проверка и восстановление GitLab webhooks из Dinext
 - ingest GitLab webhooks (`push`, `merge request`, `pipeline`) с event log и idempotent normalization
+- soft-delete синхронизация: удалённые в GitLab объекты помечаются в Dinext как `artifact_status = deleted` и исключаются из summary, вкладки GitLab и отчётов (история и связи сохраняются)
 - generic model артефактов разработки (`Development Artifact`, `Development Artifact Link`)
 - проекция dev summary в стандартные `Task` и `Issue`
 - configurable workflow automation через `Development Workflow Rule`
@@ -85,6 +86,7 @@ bench --site your-site.local set-config developer_mode 1
 
 - Для `GitLab Instance.api_token`:
   - чтение проекта и репозитория
+  - чтение списка веток (для reconciliation orphan branches)
   - управление project webhooks
   - чтение MR / pipeline / job / release данных для reconciliation
 - Для `User.GitLab Branch Token`:
@@ -102,6 +104,25 @@ bench --site your-site.local set-config developer_mode 1
 5. Если у проекта несколько GitLab mapping, Dinext использует default mapping для preview и позволяет выбрать другой repository при создании branch.
 6. Рекомендуемая конвенция именования: ветка, MR title и commit message должны содержать **Dinext key**.
 7. Legacy Jira keys продолжают резолвиться через alias registry, но canonical reference для новых артефактов — Dinext key.
+
+### Синхронизация удалений (soft-delete)
+
+Когда объект исчезает в GitLab, Dinext не удаляет `Development Artifact` и `Development Artifact Link` физически. Запись артефакта переводится в tombstone-состояние `artifact_status = deleted`, а связи остаются для аудита и повторного использования, если объект снова появится в GitLab.
+
+Два канала синхронизации:
+
+| Канал | Когда срабатывает | Что делает |
+|-------|-------------------|------------|
+| Webhook `Push Hook` | GitLab прислал delete-push (`after` / `checkout_sha` — all-zero SHA) | Помечает branch artifact как `deleted`, не создаёт commit artifacts, пересчитывает `custom_git_*` у связанных `Task`/`Issue` |
+| Scheduled reconciliation | Hourly/daily job `reconcile_mapping` | Сверяет список веток в GitLab с локальными branch artifacts; отсутствующие в remote помечает `deleted` и обновляет summary затронутых work items |
+
+Поведение в продукте:
+
+- удалённые артефакты не учитываются в `custom_git_*` summary на `Task`/`Issue`;
+- на вкладке **GitLab** они не показываются (после удаления branch снова доступен **Create Branch**, если других активных branch artifacts нет);
+- отчёты traceability и release composition учитывают только активные артефакты.
+
+Workflow automation при удалении branch сейчас не срабатывает (нет события `branch_deleted` в `Development Workflow Rule`).
 
 ### Upgrade notes
 
@@ -220,7 +241,8 @@ bench --site your-site.local export-fixtures --app dinext_git
 - [`dinext_git/api/development_panel.py`](dinext_git/api/development_panel.py) — payload вкладки GitLab, расчёт `show_gitlab_tab` и type visibility rules
 - [`dinext_git/api/gitlab_webhooks.py`](dinext_git/api/gitlab_webhooks.py) — публичный ingest GitLab webhooks
 - [`dinext_git/api/gitlab_branches.py`](dinext_git/api/gitlab_branches.py) — preview и создание branch
-- [`dinext_git/services/gitlab/store.py`](dinext_git/services/gitlab/store.py) — persistence и multi-mapping lookup
+- [`dinext_git/services/gitlab/store.py`](dinext_git/services/gitlab/store.py) — persistence, `mark_artifact_deleted`, multi-mapping lookup
+- [`dinext_git/services/gitlab/projector.py`](dinext_git/services/gitlab/projector.py) — проекция summary на `Task`/`Issue` (без deleted artifacts)
 - [`dinext_git/services/gitlab/branch_actions.py`](dinext_git/services/gitlab/branch_actions.py) — бизнес-логика создания branch и user-scoped tokens
 - [`dinext_git/services/gitlab/normalizer.py`](dinext_git/services/gitlab/normalizer.py) — нормализация webhook payload в артефакты
 - [`dinext_git/services/gitlab/reconcile.py`](dinext_git/services/gitlab/reconcile.py) — reconciliation и webhook health
@@ -240,6 +262,7 @@ bench --site your-site.local export-fixtures --app dinext_git
 - **Multi-mapping** — один Dinext `Project` может ссылаться на несколько GitLab repositories через child table на вкладке `Development`.
 - **User-scoped tokens** — `Create Branch` использует персональный `User.GitLab Branch Token`.
 - **Type visibility rules** — child table `GitLab Type Visibility Rules` ограничивает показ вкладки GitLab по типам `Task`/`Issue`; пустой тип в правиле означает «разрешить все типы» для соответствующего DocType.
+- **Soft-delete sync** — удаление branch в GitLab через delete-push webhook или reconciliation orphan detection; tombstone `artifact_status = deleted`, исключение из summary, вкладки GitLab и отчётов.
 
 ## 🗂️ Структура репозитория
 
@@ -341,11 +364,11 @@ flowchart LR
   T -->|Create Branch + user token| Repo
   WH -->|push / MR / pipeline| Ingest[gitlab_webhooks.receive]
   Ingest --> Normalizer[normalizer]
-  Normalizer --> DA
+  Normalizer -->|upsert or soft-delete| DA
   Normalizer --> DAL
   DAL --> T
   Reconcile[reconcile jobs] --> Repo
-  Reconcile --> DA
+  Reconcile -->|upsert or orphan branch delete| DA
   Panel[development_panel.get_panel] --> T
   Panel --> DA
   GL --> Repo
@@ -356,9 +379,9 @@ flowchart LR
 
 1. Оператор настраивает `GitLab Instance`, mapping и при необходимости type visibility rules на `Project`.
 2. Разработчик работает из `Task`/`Issue`; сервер рассчитывает `show_gitlab_tab` по mapping и правилам типов.
-3. GitLab шлёт webhook в Dinext; normalizer создаёт или обновляет `Development Artifact` и связи с work item.
-4. Reconciliation и webhook health jobs догоняют расхождения между GitLab и Dinext.
-5. UI формы запрашивает payload у `development_panel.get_panel` и отображает grouped artifacts, summary и branch actions.
+3. GitLab шлёт webhook в Dinext; normalizer создаёт, обновляет или помечает `deleted` для `Development Artifact` и поддерживает связи с work item.
+4. Reconciliation и webhook health jobs догоняют расхождения между GitLab и Dinext, в том числе ветки, удалённые в GitLab без доставленного webhook.
+5. UI формы запрашивает payload у `development_panel.get_panel` и отображает только активные artifacts, summary и branch actions.
 
 ## Проверка и отладка
 
@@ -388,6 +411,15 @@ bench --site your-site.local export-fixtures --app dinext_git
 - `GitLab Project Mapping.last_reconciled_pipeline_at`
 - `Reconciliation Cursor`
 - scheduler jobs `run_hourly_reconciliation` и `run_daily_reconciliation`
+
+### Если ветка удалена в GitLab, но в Dinext ещё «живая»
+
+Проверьте:
+
+- пришёл ли delete-push в `GitLab Event Log` (тип `Push Hook`, в payload `after` / `checkout_sha` с all-zero SHA);
+- `Development Artifact.artifact_status` для соответствующей branch — ожидается `deleted`;
+- отработал ли reconciliation: у mapping должен быть доступ к GitLab API для чтения веток; в результате `reconcile_mapping` поле `branches_deleted` показывает число tombstone-операций за прогон;
+- пересчитались ли `custom_git_*` на связанном `Task`/`Issue` после tombstone.
 
 ### Если workflow не сдвинулся
 

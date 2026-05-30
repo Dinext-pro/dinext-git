@@ -5,6 +5,7 @@ from __future__ import annotations
 import frappe
 from frappe import _
 
+from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
 from dinext_git.services.gitlab.branch_actions import preview_branch
 from dinext_git.services.gitlab.projector import collect_work_item_summary
 from dinext_git.services.gitlab.store import get_default_mapping_for_project, get_mappings_for_project
@@ -131,6 +132,7 @@ def _panel_payload(doctype: str, name: str) -> dict:
 			],
 			order_by="modified desc",
 		)
+		artifact_rows = [row for row in artifact_rows if row.get("artifact_status") != DELETED_ARTIFACT_STATUS]
 		link_by_artifact = {row["artifact"]: row for row in links}
 		for artifact in artifact_rows:
 			artifact["link"] = link_by_artifact.get(artifact["name"])

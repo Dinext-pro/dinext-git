@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils.password import remove_encrypted_password
 
 from dinext_git.services.gitlab.branch_actions import create_branch, preview_branch
 from dinext_git.tests.test_utils import make_gitlab_instance, make_mapping, make_project, make_task
@@ -92,5 +93,6 @@ class TestBranchActions(FrappeTestCase):
 		instance = make_gitlab_instance()
 		make_mapping(project, instance)
 		frappe.db.set_value("User", "Administrator", "custom_gitlab_branch_api_token", "")
+		remove_encrypted_password("User", "Administrator", "custom_gitlab_branch_api_token")
 
 		self.assertRaises(frappe.ValidationError, create_branch, "Task", task)

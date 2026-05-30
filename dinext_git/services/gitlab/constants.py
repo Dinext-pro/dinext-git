@@ -13,6 +13,8 @@ ARTIFACT_TYPES = (
 	"tag",
 )
 
+DELETED_ARTIFACT_STATUS = "deleted"
+
 WEBHOOK_EVENTS = (
 	"push",
 	"merge_request",

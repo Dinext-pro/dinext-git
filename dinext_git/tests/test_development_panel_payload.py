@@ -3,7 +3,13 @@ from __future__ import annotations
 from frappe.tests.utils import FrappeTestCase
 
 from dinext_git.api.development_panel import get_panel
-from dinext_git.services.gitlab.store import build_artifact_link_payload, build_artifact_payload, upsert_artifact, upsert_artifact_link
+from dinext_git.services.gitlab.store import (
+	build_artifact_link_payload,
+	build_artifact_payload,
+	mark_artifact_deleted,
+	upsert_artifact,
+	upsert_artifact_link,
+)
 from dinext_git.tests.test_utils import (
 	add_type_visibility_rule,
 	make_gitlab_instance,
@@ -99,6 +105,51 @@ class TestDevelopmentPanelPayload(FrappeTestCase):
 		self.assertFalse(payload["can_create_branch"])
 		self.assertIsNone(payload["branch_preview"])
 		self.assertFalse(payload["show_branch_mapping_details"])
+
+	def test_panel_hides_deleted_artifacts_and_allows_recreate_branch(self):
+		project = make_project()
+		task = make_task(project)
+		instance = make_gitlab_instance()
+		mapping = make_mapping(project, instance)
+
+		artifact = upsert_artifact(
+			build_artifact_payload(
+				instance=instance,
+				mapping=mapping,
+				artifact_type="branch",
+				external_id=f"feature/{task}-sample",
+				data={
+					"artifact_name": f"feature/{task}-sample",
+					"ref_name": f"feature/{task}-sample",
+					"artifact_status": "active",
+					"web_url": "https://gitlab.example.com/branch/sample",
+				},
+			)
+		)
+		upsert_artifact_link(
+			build_artifact_link_payload(
+				artifact=artifact,
+				target_doctype="Task",
+				target_name=task,
+				link_source="branch_name",
+				extracted_key=task,
+				is_primary=1,
+			)
+		)
+		mark_artifact_deleted(
+			instance=instance,
+			mapping=mapping,
+			artifact_type="branch",
+			external_id=f"feature/{task}-sample",
+			payload={"reason": "test"},
+		)
+
+		payload = get_panel("Task", task)
+
+		self.assertTrue(payload["show_gitlab_tab"])
+		self.assertEqual(payload["grouped_artifacts"], {})
+		self.assertTrue(payload["can_create_branch"])
+		self.assertIsNotNone(payload["branch_preview"])
 
 	def test_panel_shows_task_gitlab_tab_without_task_rules(self):
 		project = make_project()

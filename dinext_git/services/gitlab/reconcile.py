@@ -12,9 +12,11 @@ from dinext_git.services.gitlab.normalizer import (
 	normalize_merge_request_event,
 	normalize_pipeline_event,
 )
+from dinext_git.services.gitlab.payloads import flatten_artifact_names
 from dinext_git.services.gitlab.projector import update_work_item_summary
-from dinext_git.services.gitlab.store import get_mapping
+from dinext_git.services.gitlab.store import get_mapping, mark_artifact_deleted
 from dinext_git.services.gitlab.webhook_admin import verify_mapping_webhook
+from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
 
 
 def _touch_cursor(mapping_name: str, artifact_type: str, *, status: str, error: str | None = None) -> None:
@@ -46,12 +48,57 @@ def _touch_cursor(mapping_name: str, artifact_type: str, *, status: str, error: 
 		).insert(ignore_permissions=True)
 
 
+def _update_summaries_for_artifacts(artifact_names: set[str]) -> None:
+	if not artifact_names:
+		return
+
+	linked_targets = frappe.get_all(
+		"Development Artifact Link",
+		filters={"artifact": ["in", list(artifact_names)]},
+		fields=["target_doctype", "target_name"],
+		group_by="target_doctype, target_name",
+	)
+	for row in linked_targets:
+		update_work_item_summary(row["target_doctype"], row["target_name"])
+
+
+def _reconcile_deleted_branches(mapping: dict[str, Any], client: GitLabClient, project_id: str | int) -> list[str]:
+	remote_branch_names = {row["name"] for row in client.list_branches(project_id)}
+	local_branches = frappe.get_all(
+		"Development Artifact",
+		filters={
+			"project_mapping": mapping["name"],
+			"artifact_type": "branch",
+		},
+		fields=["name", "external_id", "artifact_status"],
+	)
+
+	deleted_artifacts: list[str] = []
+	for branch in local_branches:
+		if branch.get("artifact_status") == DELETED_ARTIFACT_STATUS:
+			continue
+		if branch["external_id"] in remote_branch_names:
+			continue
+		artifact_name = mark_artifact_deleted(
+			instance=mapping["gitlab_instance"],
+			mapping=mapping["name"],
+			artifact_type="branch",
+			external_id=branch["external_id"],
+			payload={"reconcile_reason": "branch_missing_in_gitlab", "branch_name": branch["external_id"]},
+		)
+		if artifact_name:
+			deleted_artifacts.append(artifact_name)
+
+	return deleted_artifacts
+
+
 def reconcile_mapping(mapping_name: str) -> dict[str, Any]:
 	mapping = get_mapping(mapping_name)
 	client = GitLabClient(mapping["gitlab_instance"])
 	project_id = mapping["gitlab_project_id"] or client.get_project(project_path=mapping["gitlab_project_path"])["id"]
 
-	results: dict[str, Any] = {"merge_requests": 0, "pipelines": 0}
+	results: dict[str, Any] = {"merge_requests": 0, "pipelines": 0, "branches_deleted": 0}
+	touched_artifact_names: set[str] = set()
 
 	_touch_cursor(mapping_name, "merge_request", status="running")
 	try:
@@ -77,7 +124,8 @@ def reconcile_mapping(mapping_name: str) -> dict[str, Any]:
 				payload=payload,
 				status="processed",
 			)
-			normalize_merge_request_event(mapping["gitlab_instance"], mapping_name, payload)
+			normalized = normalize_merge_request_event(mapping["gitlab_instance"], mapping_name, payload)
+			touched_artifact_names.update(flatten_artifact_names(normalized))
 			results["merge_requests"] += 1
 		frappe.db.set_value("GitLab Project Mapping", mapping_name, "last_reconciled_mr_at", frappe.utils.now_datetime())
 		_touch_cursor(mapping_name, "merge_request", status="idle")
@@ -110,7 +158,8 @@ def reconcile_mapping(mapping_name: str) -> dict[str, Any]:
 				payload=payload,
 				status="processed",
 			)
-			normalize_pipeline_event(mapping["gitlab_instance"], mapping_name, payload)
+			normalized = normalize_pipeline_event(mapping["gitlab_instance"], mapping_name, payload)
+			touched_artifact_names.update(flatten_artifact_names(normalized))
 			results["pipelines"] += 1
 		frappe.db.set_value(
 			"GitLab Project Mapping",
@@ -123,14 +172,10 @@ def reconcile_mapping(mapping_name: str) -> dict[str, Any]:
 		_touch_cursor(mapping_name, "pipeline", status="failed", error=str(exc))
 		raise
 
-	linked_targets = frappe.get_all(
-		"Development Artifact Link",
-		filters={"project": mapping["project"]},
-		fields=["target_doctype", "target_name"],
-		group_by="target_doctype, target_name",
-	)
-	for row in linked_targets:
-		update_work_item_summary(row["target_doctype"], row["target_name"])
+	deleted_branch_artifacts = _reconcile_deleted_branches(mapping, client, project_id)
+	results["branches_deleted"] = len(deleted_branch_artifacts)
+	touched_artifact_names.update(deleted_branch_artifacts)
+	_update_summaries_for_artifacts(touched_artifact_names)
 
 	return results
 
