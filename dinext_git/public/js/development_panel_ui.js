@@ -1,5 +1,67 @@
 frappe.provide("dinext_git.development_panel");
 
+dinext_git.development_panel.DEVELOPMENT_STATUS_COLORS = {
+	not_started: "gray",
+	in_progress: "orange",
+	merged: "green",
+	declined: "red",
+	pipeline_failed: "red",
+	deployed: "cyan",
+};
+
+dinext_git.development_panel.get_development_status_color = function (statusCode) {
+	return dinext_git.development_panel.DEVELOPMENT_STATUS_COLORS[statusCode] || "gray";
+};
+
+dinext_git.development_panel.render_status_pill = function (summary) {
+	const statusCode = summary.development_status || "not_started";
+	const label = frappe.utils.escape_html(summary.development_status_label || __("Not started"));
+	const color = dinext_git.development_panel.get_development_status_color(statusCode);
+	return `<span class="indicator-pill ${color} no-indicator-dot">${label}</span>`;
+};
+
+dinext_git.development_panel.ARTIFACT_STATUS_COLORS = {
+	merged: "green",
+	success: "green",
+	passed: "green",
+	approved: "green",
+	opened: "blue",
+	open: "blue",
+	active: "blue",
+	running: "orange",
+	pending: "orange",
+	created: "cyan",
+	closed: "red",
+	declined: "red",
+	failed: "red",
+	failure: "red",
+	canceled: "red",
+	cancelled: "red",
+	recorded: "gray",
+};
+
+dinext_git.development_panel.get_artifact_status_color = function (artifactType, statusCode) {
+	const normalized = (statusCode || "").toLowerCase();
+	const mapped = dinext_git.development_panel.ARTIFACT_STATUS_COLORS[normalized];
+	if (mapped) {
+		return mapped;
+	}
+
+	if (frappe.utils && frappe.utils.guess_colour) {
+		const label = frappe.utils.to_title_case(normalized.replaceAll("_", " "));
+		return frappe.utils.guess_colour(label);
+	}
+
+	return "gray";
+};
+
+dinext_git.development_panel.render_artifact_status_pill = function (row) {
+	const statusCode = row.artifact_status || "n/a";
+	const label = frappe.utils.escape_html(row.artifact_status_label || row.artifact_status || "n/a");
+	const color = dinext_git.development_panel.get_artifact_status_color(row.artifact_type, statusCode);
+	return `<span class="indicator-pill ${color} no-indicator-dot dinext-git-artifact-status">${label}</span>`;
+};
+
 dinext_git.development_panel.ensure_assets = function (callback) {
 	frappe.require(["/assets/dinext_git/css/development_panel.css"], callback);
 };
@@ -44,14 +106,14 @@ dinext_git.development_panel.render_artifact_item = function (row, { strongLink 
 		? `<a href="${frappe.utils.escape_html(row.web_url)}" target="_blank" rel="noopener noreferrer">${label}</a>`
 		: label;
 	const nameMarkup = strongLink ? `<strong>${linkContent}</strong>` : linkContent;
-	const status = frappe.utils.escape_html(row.artifact_status_label || row.artifact_status || "n/a");
+	const statusPill = dinext_git.development_panel.render_artifact_status_pill(row);
 	const updated = dinext_git.development_panel.render_updated_on(row.updated_on);
 	const author = dinext_git.development_panel.render_author_chip(row);
 
 	return `<li class="dinext-git-artifact-item">
 		<div class="dinext-git-artifact-title">${nameMarkup}</div>
 		<div class="dinext-git-artifact-meta">
-			<span class="dinext-git-artifact-status text-muted">(${status})</span>
+			${statusPill}
 			${updated}
 			${author}
 		</div>
@@ -102,7 +164,7 @@ dinext_git.development_panel.render_grouped_artifacts = function (groupedArtifac
 				})
 				.join("");
 			const defaultBadge = group.is_default
-				? `<span class="indicator-pill green ml-2">${__("Default")}</span>`
+				? `<span class="indicator-pill gray no-indicator-dot ml-2">${__("★")}</span>`
 				: "";
 			return `<div class="mb-4">
 				<h5>${frappe.utils.escape_html(group.gitlab_project_path || "")}${defaultBadge}</h5>
@@ -131,11 +193,16 @@ dinext_git.development_panel.render_panel_html = function (payload, { strongLink
 		sections || `<p class="text-muted">${payload.empty_state_message || __("No development activity yet.")}</p>`;
 	const summaryMeta = dinext_git.development_panel.render_summary_meta(summary);
 
+	const statusPill = dinext_git.development_panel.render_status_pill(summary);
+
 	return `<div class="dinext-git-development">
 		<div class="mb-2">
-			<strong>${__("Development status")}:</strong> ${frappe.utils.escape_html(summary.development_status_label || __("Not started"))}${statusCountMarkup}
+			<div class="dinext-git-status-row">
+				<strong>${__("Development status")}:</strong>
+				${statusPill}${statusCountMarkup}
+			</div>
 			${summaryMeta}
-			${flags ? `<div class="mt-2">${flags}</div>` : ""}
+			${flags ? `<div class="mt-2 dinext-git-discrepancy-badges">${flags}</div>` : ""}
 		</div>
 		${body}
 	</div>`;

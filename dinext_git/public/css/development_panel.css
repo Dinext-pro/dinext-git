@@ -1,3 +1,16 @@
+.dinext-git-development .dinext-git-status-row {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.35rem 0.5rem;
+}
+
+.dinext-git-development .dinext-git-discrepancy-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+}
+
 .dinext-git-development .dinext-git-summary-meta {
 	display: flex;
 	flex-direction: column;
@@ -29,6 +42,10 @@
 	gap: 0.35rem 0.75rem;
 	margin-top: 0.15rem;
 	font-size: var(--text-xs);
+}
+
+.dinext-git-development .dinext-git-artifact-status {
+	font-size: inherit;
 }
 
 .dinext-git-development .dinext-git-author-chip {
