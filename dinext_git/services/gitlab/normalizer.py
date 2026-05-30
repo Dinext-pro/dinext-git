@@ -62,6 +62,12 @@ def _is_zero_sha(value: str | None) -> bool:
 	return bool(value) and set(value) == {"0"}
 
 
+def _user_avatar(user: dict[str, Any] | None) -> str | None:
+	if not user:
+		return None
+	return user.get("avatar_url")
+
+
 def is_branch_delete_push(payload: dict[str, Any]) -> bool:
 	after = payload.get("after")
 	checkout_sha = payload.get("checkout_sha")
@@ -97,6 +103,7 @@ def normalize_push_event(instance: str, mapping: str | None, payload: dict[str, 
 				"title": payload.get("message"),
 				"author_name": payload.get("user_name"),
 				"author_email": payload.get("user_email"),
+				"author_avatar_url": _user_avatar(payload.get("user")),
 			},
 		)
 	)
@@ -152,6 +159,7 @@ def normalize_merge_request_event(instance: str, mapping: str | None, payload: d
 				"title": attributes.get("title"),
 				"author_name": payload.get("user", {}).get("name"),
 				"author_email": payload.get("user", {}).get("email"),
+				"author_avatar_url": _user_avatar(payload.get("user")),
 			},
 		)
 	)
@@ -185,6 +193,7 @@ def normalize_pipeline_event(instance: str, mapping: str | None, payload: dict[s
 				"title": (payload.get("commit") or {}).get("title"),
 				"author_name": payload.get("user", {}).get("name"),
 				"author_email": payload.get("user", {}).get("email"),
+				"author_avatar_url": _user_avatar(payload.get("user")),
 			},
 		)
 	)
@@ -207,6 +216,7 @@ def normalize_pipeline_event(instance: str, mapping: str | None, payload: dict[s
 					"title": build.get("stage"),
 					"author_name": (build.get("user") or {}).get("name"),
 					"author_email": (build.get("user") or {}).get("email"),
+					"author_avatar_url": _user_avatar(build.get("user")),
 				},
 			)
 		)
@@ -229,6 +239,7 @@ def normalize_pipeline_event(instance: str, mapping: str | None, payload: dict[s
 						"title": build.get("stage"),
 						"author_name": (build.get("user") or {}).get("name"),
 						"author_email": (build.get("user") or {}).get("email"),
+						"author_avatar_url": _user_avatar(build.get("user")),
 					},
 				)
 			)

@@ -321,3 +321,149 @@ class TestDevelopmentPanelPayload(FrappeTestCase):
 		items = [item for group in transactions for item in group.get("items", [])]
 		self.assertNotIn("Development Artifact", items)
 		self.assertNotIn("Development Artifact Link", items)
+
+	def test_panel_exposes_artifact_author_and_updated_metadata(self):
+		project = make_project()
+		task = make_task(project)
+		instance = make_gitlab_instance()
+		mapping = make_mapping(project, instance)
+
+		artifact = upsert_artifact(
+			build_artifact_payload(
+				instance=instance,
+				mapping=mapping,
+				artifact_type="merge_request",
+				external_id="meta-11",
+				data={
+					"artifact_name": "MR Meta",
+					"artifact_status": "opened",
+					"web_url": "https://gitlab.example.com/mr/meta-11",
+					"author_name": "GitLab Author",
+					"author_email": "author@example.com",
+					"author_avatar_url": "https://gitlab.example.com/avatar.png",
+				},
+			)
+		)
+		upsert_artifact_link(
+			build_artifact_link_payload(
+				artifact=artifact,
+				target_doctype="Task",
+				target_name=task,
+				link_source="mr_title",
+			)
+		)
+		frappe.db.set_value("Development Artifact", artifact, "modified", "2026-05-30 12:00:00", update_modified=False)
+
+		payload = get_panel("Task", task)
+		group = next(iter(payload["grouped_artifacts"].values()))
+		row = group["artifacts_by_type"]["merge_request"][0]
+
+		self.assertEqual(row["author_display_name"], "GitLab Author")
+		self.assertEqual(row["author_avatar_source"], "gitlab")
+		self.assertEqual(row["updated_on"], "2026-05-30 12:00:00")
+		self.assertEqual(payload["summary"]["last_updated_on"], "2026-05-30 12:00:00")
+		self.assertEqual(payload["summary"]["last_updated_on_by_type"]["merge_request"], "2026-05-30 12:00:00")
+
+	def test_panel_falls_back_to_dinext_user_avatar(self):
+		project = make_project()
+		task = make_task(project)
+		instance = make_gitlab_instance()
+		mapping = make_mapping(project, instance)
+		email = f"panel-fallback-{frappe.generate_hash(length=6)}@example.com"
+		user = frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": email,
+				"first_name": "Dinext",
+				"last_name": "Avatar",
+				"send_welcome_email": 0,
+				"user_image": "https://example.com/dinext-avatar.png",
+			}
+		)
+		user.insert(ignore_permissions=True)
+
+		artifact = upsert_artifact(
+			build_artifact_payload(
+				instance=instance,
+				mapping=mapping,
+				artifact_type="pipeline",
+				external_id="pipe-99",
+				data={
+					"artifact_name": "Pipeline 99",
+					"artifact_status": "success",
+					"author_name": "Pipeline Author",
+					"author_email": email,
+				},
+			)
+		)
+		upsert_artifact_link(
+			build_artifact_link_payload(
+				artifact=artifact,
+				target_doctype="Task",
+				target_name=task,
+				link_source="pipeline_ref",
+			)
+		)
+
+		payload = get_panel("Task", task)
+		group = next(iter(payload["grouped_artifacts"].values()))
+		row = group["artifacts_by_type"]["pipeline"][0]
+
+		self.assertEqual(row["author_avatar_source"], "dinext_user")
+		self.assertEqual(row["author_avatar_url"], "https://example.com/dinext-avatar.png")
+
+	def test_panel_summary_timestamps_ignore_deleted_artifacts(self):
+		project = make_project()
+		task = make_task(project)
+		instance = make_gitlab_instance()
+		mapping = make_mapping(project, instance)
+
+		visible_artifact = upsert_artifact(
+			build_artifact_payload(
+				instance=instance,
+				mapping=mapping,
+				artifact_type="merge_request",
+				external_id="visible-22",
+				data={"artifact_name": "Visible MR", "artifact_status": "opened"},
+			)
+		)
+		deleted_artifact = upsert_artifact(
+			build_artifact_payload(
+				instance=instance,
+				mapping=mapping,
+				artifact_type="branch",
+				external_id=f"feature/{task}-deleted",
+				data={"artifact_name": f"feature/{task}-deleted", "artifact_status": "active"},
+			)
+		)
+		upsert_artifact_link(
+			build_artifact_link_payload(
+				artifact=visible_artifact,
+				target_doctype="Task",
+				target_name=task,
+				link_source="mr_title",
+			)
+		)
+		upsert_artifact_link(
+			build_artifact_link_payload(
+				artifact=deleted_artifact,
+				target_doctype="Task",
+				target_name=task,
+				link_source="branch_name",
+			)
+		)
+		frappe.db.set_value("Development Artifact", visible_artifact, "modified", "2026-05-30 10:00:00", update_modified=False)
+		frappe.db.set_value("Development Artifact", deleted_artifact, "modified", "2026-05-30 15:00:00", update_modified=False)
+		mark_artifact_deleted(
+			instance=instance,
+			mapping=mapping,
+			artifact_type="branch",
+			external_id=f"feature/{task}-deleted",
+			payload={"reason": "test"},
+		)
+
+		payload = get_panel("Task", task)
+
+		self.assertEqual(payload["summary"]["last_updated_on"], "2026-05-30 10:00:00")
+		self.assertNotIn("branch", payload["summary"]["last_updated_on_by_type"])
+		self.assertEqual(payload["summary"]["last_updated_on_by_type"]["merge_request"], "2026-05-30 10:00:00")

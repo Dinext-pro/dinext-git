@@ -35,5 +35,7 @@
 "Declined merge requests","Отклоненные merge requests",""
 "No merge request","Нет merge request",""
 "Release without merge","Релиз без merge",""
+"Default","По умолчанию",""
+"Last updated","Последнее обновление",""
 "GitLab Traceability Exceptions","Исключения traceability GitLab",""
 "GitLab Release Composition","Состав релиза GitLab",""

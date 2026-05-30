@@ -263,6 +263,7 @@ def create_branch(
 			)
 		raise exc
 
+	session_user = frappe.get_doc("User", frappe.session.user)
 	artifact_name = upsert_artifact(
 		build_artifact_payload(
 			instance=mapping["gitlab_instance"],
@@ -276,7 +277,9 @@ def create_branch(
 				"web_url": branch_data.get("web_url"),
 				"commit_sha": (branch_data.get("commit") or {}).get("id"),
 				"title": doc.get("subject"),
-				"author_name": frappe.session.user,
+				"author_name": session_user.full_name or session_user.name,
+				"author_email": session_user.email,
+				"author_avatar_url": session_user.user_image,
 			},
 		)
 	)

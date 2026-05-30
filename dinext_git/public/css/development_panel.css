@@ -1,0 +1,46 @@
+.dinext-git-development .dinext-git-summary-meta {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	margin-bottom: 0.75rem;
+}
+
+.dinext-git-development .dinext-git-type-summary {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 1rem;
+}
+
+.dinext-git-development .dinext-git-type-heading {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 0.35rem 0.75rem;
+}
+
+.dinext-git-development .dinext-git-artifact-item {
+	margin-bottom: 0.5rem;
+}
+
+.dinext-git-development .dinext-git-artifact-meta {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.35rem 0.75rem;
+	margin-top: 0.15rem;
+	font-size: var(--text-xs);
+}
+
+.dinext-git-development .dinext-git-author-chip {
+	display: inline-flex;
+	align-items: center;
+	line-height: 1;
+}
+
+.dinext-git-development .dinext-git-author-chip .avatar {
+	cursor: default;
+}
+
+.dinext-git-development .dinext-git-updated-on {
+	white-space: nowrap;
+}
