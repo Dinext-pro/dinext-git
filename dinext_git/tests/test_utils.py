@@ -63,28 +63,63 @@ def make_issue_type(name: str | None = None) -> str:
 	return doc.name
 
 
-def make_task(project: str | None = None, task_type: str | None = None) -> str:
-	doc = frappe.get_doc(
-		{
-			"doctype": "Task",
-			"subject": f"Traceability Task {frappe.generate_hash(length=6)}",
-			"project": project,
-			"status": "Open",
-			"type": task_type,
-		}
-	)
-	doc.insert(ignore_permissions=True)
+def make_task(project: str | None = None, task_type: str | None = None, name: str | None = None) -> str:
+	payload: dict = {
+		"doctype": "Task",
+		"subject": f"Traceability Task {frappe.generate_hash(length=6)}",
+		"project": project,
+		"status": "Open",
+		"type": task_type,
+	}
+	if name:
+		payload["name"] = name
+		frappe.flags.in_import = True
+	try:
+		doc = frappe.get_doc(payload)
+		doc.insert(ignore_permissions=True)
+	finally:
+		if name:
+			frappe.flags.in_import = False
 	return doc.name
 
 
-def make_issue(project: str | None = None, issue_type: str | None = None) -> str:
+def make_issue(project: str | None = None, issue_type: str | None = None, name: str | None = None) -> str:
+	payload: dict = {
+		"doctype": "Issue",
+		"subject": f"Traceability Issue {frappe.generate_hash(length=6)}",
+		"project": project,
+		"status": "Open",
+		"issue_type": issue_type or frappe.db.get_value("Issue Type", {}, "name"),
+	}
+	if name:
+		payload["name"] = name
+		frappe.flags.in_import = True
+	try:
+		doc = frappe.get_doc(payload)
+		doc.insert(ignore_permissions=True)
+	finally:
+		if name:
+			frappe.flags.in_import = False
+	return doc.name
+
+
+def make_key_alias(
+	target_doctype: str,
+	target_name: str,
+	alias_value: str,
+	*,
+	alias_type: str = "Dinext Key",
+	project: str | None = None,
+) -> str:
 	doc = frappe.get_doc(
 		{
-			"doctype": "Issue",
-			"subject": f"Traceability Issue {frappe.generate_hash(length=6)}",
+			"doctype": "Development Key Alias",
+			"alias_value": alias_value,
+			"alias_type": alias_type,
+			"target_doctype": target_doctype,
+			"target_name": target_name,
 			"project": project,
-			"status": "Open",
-			"issue_type": issue_type or frappe.db.get_value("Issue Type", {}, "name"),
+			"enabled": 1,
 		}
 	)
 	doc.insert(ignore_permissions=True)
