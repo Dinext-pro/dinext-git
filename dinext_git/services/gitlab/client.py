@@ -71,6 +71,33 @@ class GitLabClient:
 			params={"branch": branch_name, "ref": ref},
 		)
 
+	def get_branch(self, project_id: str | int, branch_name: str):
+		response = self.session.request(
+			method="GET",
+			url=self.api_url(f"projects/{project_id}/repository/branches/{quote(branch_name, safe='')}"),
+			timeout=self.timeout,
+			verify=self.verify,
+		)
+		if response.status_code == 404:
+			return None
+		if response.status_code >= 400:
+			if response.status_code in {401, 403}:
+				frappe.throw(
+					_(
+						"GitLab authorization failed. Check that your token is present, valid, and has access to the selected repository."
+					)
+				)
+			frappe.throw(
+				_("GitLab API request failed: GET {0} -> {1} {2}").format(
+					f"projects/{project_id}/repository/branches/{quote(branch_name, safe='')}",
+					response.status_code,
+					response.text,
+				)
+			)
+		if response.content:
+			return response.json()
+		return {}
+
 	def list_branches(self, project_id: str | int):
 		return self.request("GET", f"projects/{project_id}/repository/branches", params={"per_page": 100})
 

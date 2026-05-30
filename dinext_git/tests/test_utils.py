@@ -1,22 +1,36 @@
 from __future__ import annotations
 
+import time
+
 import frappe
+from frappe.exceptions import QueryDeadlockError
 
 
 def make_project() -> str:
-	project_name = f"Dinext Git Test {frappe.generate_hash(length=6)}"
-	doc = frappe.get_doc(
-		{
-			"doctype": "Project",
-			"name": f"TEST-GIT-PROJ-{frappe.generate_hash(length=6)}",
-			"project_name": project_name,
-			"status": "Open",
-			"project_type": frappe.db.get_value("Project Type", {}, "name"),
-			"custom_payment_scheme": frappe.db.get_value("Project Payment Scheme", {}, "name"),
-		}
-	)
-	doc.insert(ignore_permissions=True)
-	return doc.name
+	last_error = None
+	for attempt in range(10):
+		project_name = f"Dinext Git Test {frappe.generate_hash(length=6)}"
+		doc = frappe.get_doc(
+			{
+				"doctype": "Project",
+				"name": f"TEST-GIT-PROJ-{frappe.generate_hash(length=6)}",
+				"project_name": project_name,
+				"status": "Open",
+				"project_type": frappe.db.get_value("Project Type", {}, "name"),
+				"custom_payment_scheme": frappe.db.get_value("Project Payment Scheme", {}, "name"),
+			}
+		)
+		try:
+			doc.insert(ignore_permissions=True)
+			return doc.name
+		except QueryDeadlockError as exc:
+			last_error = exc
+			frappe.db.rollback()
+			time.sleep(0.1 * (attempt + 1))
+
+	if last_error:
+		raise last_error
+	raise RuntimeError("make_project() failed without raising an exception")
 
 
 def make_task_type(name: str | None = None) -> str:

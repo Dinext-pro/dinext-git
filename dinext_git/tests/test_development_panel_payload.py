@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
@@ -24,6 +26,15 @@ from dinext_git.tests.test_utils import (
 
 
 class TestDevelopmentPanelPayload(FrappeTestCase):
+	def setUp(self):
+		frappe.db.set_value("User", "Administrator", "custom_gitlab_branch_api_token", "user-token")
+		patcher = patch(
+			"dinext_git.services.gitlab.branch_actions.list_available_base_branches",
+			return_value=["develop", "main"],
+		)
+		self.list_branches_mock = patcher.start()
+		self.addCleanup(patcher.stop)
+
 	def test_panel_hides_gitlab_tab_without_project_mapping(self):
 		project = make_project()
 		task = make_task(project)
@@ -66,9 +77,35 @@ class TestDevelopmentPanelPayload(FrappeTestCase):
 		self.assertIn("summary", payload)
 		self.assertTrue(payload["can_create_branch"])
 		self.assertEqual(payload["branch_preview"]["base_branch"], "develop")
+		self.assertEqual(payload["default_branch_template"], "feature/{key}-{slug}")
+		self.assertEqual(payload["default_base_branch"], "develop")
+		self.assertEqual(payload["available_base_branches"], ["develop", "main"])
 		self.assertEqual(payload["summary"]["development_status_label"], "Pipeline failed")
 		self.assertEqual(len(payload["branch_mapping_options"]), 2)
 		self.assertTrue(payload["show_branch_mapping_details"])
+
+	def test_panel_allows_branch_creation_when_multiple_mappings_have_no_default(self):
+		project = make_project()
+		task = make_task(project)
+		instance = make_gitlab_instance()
+		first_mapping = make_mapping(project, instance)
+		second_mapping = make_mapping(project, instance)
+
+		project_doc = frappe.get_doc("Project", project)
+		for row in project_doc.custom_git_project_mappings:
+			row.is_default = 0
+		project_doc.save(ignore_permissions=True)
+
+		payload = get_panel("Task", task)
+
+		self.assertTrue(payload["show_gitlab_tab"])
+		self.assertTrue(payload["can_create_branch"])
+		self.assertEqual(payload["default_mapping_name"], first_mapping)
+		self.assertEqual(payload["branch_preview"]["mapping"]["name"], first_mapping)
+		self.assertEqual(
+			[row["name"] for row in payload["branch_mapping_options"]],
+			[first_mapping, second_mapping],
+		)
 
 	def test_panel_exposes_declined_label_and_merge_request_link_metadata(self):
 		project = make_project()
@@ -106,7 +143,7 @@ class TestDevelopmentPanelPayload(FrappeTestCase):
 			f"{base_url}/{project_path}/-/merge_requests?scope=all&state=closed",
 		)
 
-	def test_panel_hides_create_branch_after_branch_artifact_exists(self):
+	def test_panel_keeps_create_branch_available_after_branch_artifact_exists(self):
 		project = make_project()
 		task = make_task(project)
 		instance = make_gitlab_instance()
@@ -139,8 +176,10 @@ class TestDevelopmentPanelPayload(FrappeTestCase):
 
 		payload = get_panel("Task", task)
 
-		self.assertFalse(payload["can_create_branch"])
-		self.assertIsNone(payload["branch_preview"])
+		self.assertTrue(payload["can_create_branch"])
+		self.assertIsNotNone(payload["branch_preview"])
+		self.assertEqual(payload["default_branch_template"], "feature/{key}-{slug}")
+		self.assertEqual(payload["available_base_branches"], ["develop", "main"])
 		self.assertFalse(payload["show_branch_mapping_details"])
 
 	def test_panel_hides_deleted_artifacts_and_allows_recreate_branch(self):
