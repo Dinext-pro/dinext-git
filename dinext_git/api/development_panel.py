@@ -6,7 +6,7 @@ import frappe
 from frappe import _
 
 from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
-from dinext_git.services.gitlab.branch_actions import preview_branch
+from dinext_git.services.gitlab.branch_actions import DEFAULT_BRANCH_TEMPLATE, get_branch_dialog_options, preview_branch
 from dinext_git.services.gitlab.projector import collect_work_item_summary
 from dinext_git.services.gitlab.store import get_default_mapping_for_project, get_mappings_for_project
 
@@ -169,7 +169,6 @@ def _panel_payload(doctype: str, name: str) -> dict:
 		)
 		group["artifacts_by_type"].setdefault(artifact["artifact_type"], []).append(artifact)
 
-	has_branch_artifact = any(artifact.get("artifact_type") == "branch" for artifact in artifacts)
 	branch_preview = None
 	can_create_branch = False
 	branch_error = None
@@ -179,17 +178,29 @@ def _panel_payload(doctype: str, name: str) -> dict:
 			"name": row["name"],
 			"gitlab_project_path": row.get("gitlab_project_path"),
 			"default_base_branch": row.get("default_base_branch"),
+			"branch_naming_template": row.get("branch_naming_template") or DEFAULT_BRANCH_TEMPLATE,
 			"is_default": bool(row.get("is_default")),
 		}
 		for row in mappings
 	]
-	if not has_branch_artifact:
+	selected_mapping_name = (default_mapping or {}).get("name") or (mapping_options[0] if mapping_options else {}).get("name")
+	selected_mapping = mapping_lookup.get(selected_mapping_name) if selected_mapping_name else None
+	available_base_branches: list[str] = []
+	default_branch_template = (selected_mapping or {}).get("branch_naming_template") or DEFAULT_BRANCH_TEMPLATE
+	default_base_branch = (selected_mapping or {}).get("default_base_branch") or "develop"
+	try:
+		dialog_options = get_branch_dialog_options(doctype, name, selected_mapping_name)
+		branch_preview = dialog_options["branch_preview"]
+		available_base_branches = dialog_options["available_base_branches"]
+		default_branch_template = dialog_options["branch_template"]
+		default_base_branch = dialog_options["base_branch"]
+		can_create_branch = True
+	except Exception as exc:
+		branch_error = str(exc)
 		try:
-			selected_mapping_name = (default_mapping or {}).get("name")
 			branch_preview = preview_branch(doctype, name, selected_mapping_name)
-			can_create_branch = True
-		except Exception as exc:
-			branch_error = str(exc)
+		except Exception:
+			branch_preview = None
 
 	return {
 		"work_item": doc,
@@ -198,9 +209,12 @@ def _panel_payload(doctype: str, name: str) -> dict:
 		"can_create_branch": can_create_branch,
 		"branch_error": branch_error,
 		"branch_preview": branch_preview,
+		"default_branch_template": default_branch_template,
+		"default_base_branch": default_base_branch,
+		"available_base_branches": available_base_branches,
 		"branch_mapping_options": mapping_options,
 		"show_branch_mapping_details": len(mapping_options) > 1,
-		"default_mapping_name": (default_mapping or {}).get("name"),
+		"default_mapping_name": (default_mapping or {}).get("name") or selected_mapping_name,
 		"grouped_artifacts": grouped,
 		"empty_state_message": _("No GitLab development activity has been linked yet."),
 	}

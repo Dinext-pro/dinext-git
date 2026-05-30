@@ -12,7 +12,8 @@
 - множественный маппинг `Project -> GitLab project` через child table `GitLab Project Mappings` на вкладке `Development`
 - правила видимости вкладки Development по типам `Task`/`Issue` через child table `GitLab Type Visibility Rules` на форме `Project`
 - отдельная вкладка **Development** на формах `Task` и `Issue`; она показывается только при наличии GitLab mapping у проекта и при выполнении правил видимости по типу
-- branch creation из `Task`/`Issue` с preview имени ветки, default mapping и ручным выбором GitLab repository
+- branch creation из `Task`/`Issue` с preview имени ветки, default mapping, ручным выбором GitLab repository, редактируемым `branch_naming_template` и выбором `Base branch` из live-списка GitLab
+- поддержка нескольких branch для одного `Task`/`Issue`, включая несколько branch в одном GitLab repository
 - персональные GitLab token на уровне `User` для `Create Branch` без fallback на system token
 - автоматическая регистрация, проверка и восстановление GitLab webhooks из Dinext
 - ingest GitLab webhooks (`push`, `merge request`, `pipeline`) с event log и idempotent normalization
@@ -91,6 +92,7 @@ bench --site your-site.local set-config developer_mode 1
   - чтение MR / pipeline / job / release данных для reconciliation
 - Для `User.GitLab Branch Token`:
   - доступ к выбранному GitLab repository
+  - чтение списка веток (для выбора `Base branch` в диалоге **Create Branch**)
   - создание branch
 
 `Create Branch` использует только персональный **GitLab Branch Token** пользователя и не делает fallback на `GitLab Instance.api_token`.
@@ -101,9 +103,45 @@ bench --site your-site.local set-config developer_mode 1
 2. Перед первым **Create Branch** разработчик заполняет в своём профиле **GitLab Branch Token**.
 3. Если у проекта настроен GitLab mapping и тип документа разрешён правилами видимости, на форме появляется вкладка **Development** с блоком разработки и кнопкой **Create Branch**.
 4. Разработчик использует кнопку **Create Branch** или включает Dinext key в branch/MR/commit вручную.
-5. Если у проекта несколько GitLab mapping, Dinext использует default mapping для preview и позволяет выбрать другой repository при создании branch.
-6. Рекомендуемая конвенция именования: ветка, MR title и commit message должны содержать **Dinext key**.
-7. Legacy Jira keys продолжают резолвиться через alias registry, но canonical reference для новых артефактов — Dinext key.
+5. Диалог **Create Branch** открывается уже с default GitLab repository, его `branch_naming_template` и `default_base_branch`. Пользователь может разово изменить шаблон (без сохранения в mapping) и выбрать `Base branch` из live-списка веток GitLab; итоговое имя ветки Dinext preview рассчитывает на сервере.
+6. Один `Task`/`Issue` может иметь несколько branch artifacts; повторное создание branch не блокируется уже существующей активной веткой.
+7. Если у проекта несколько GitLab mapping, Dinext использует **Default Mapping** для initial preview; при нескольких mapping без default — первый enabled mapping. В диалоге можно выбрать другой repository.
+8. Рекомендуемая конвенция именования: ветка, MR title и commit message должны содержать **Dinext key**.
+9. Legacy Jira keys продолжают резолвиться через alias registry, но canonical reference для новых артефактов — Dinext key.
+
+### Диалог Create Branch
+
+При открытии формы `Task`/`Issue` сервер через `development_panel.get_panel` отдаёт bootstrap для диалога:
+
+| Поле payload | Назначение |
+|--------------|------------|
+| `default_mapping_name` | Стартовый GitLab repository (default mapping или fallback) |
+| `default_branch_template` | Шаблон имени ветки из mapping |
+| `default_base_branch` | Базовая ветка из mapping |
+| `available_base_branches` | Live-список веток GitLab для выбранного repository |
+| `branch_preview` | Server-side preview имени ветки для стартовых значений |
+| `branch_mapping_options` | Список mapping, если их несколько |
+
+UI-логика в [`task_development.js`](dinext_git/public/js/task_development.js) и [`issue_development.js`](dinext_git/public/js/issue_development.js):
+
+1. Диалог открывается с уже подставленными template и base branch.
+2. Поле **Branch naming template** — разовый override только для текущего создания; `GitLab Project Mapping.branch_naming_template` не меняется.
+3. Поле **Base branch** — select из `available_base_branches`; при смене mapping список перезагружается через `gitlab_branches.options`.
+4. Preview и create всегда идут через сервер (`preview` / `create`) с параметрами `mapping_name`, `branch_template`, `base_branch`.
+
+Поддерживаемые placeholders в `branch_naming_template`:
+
+| Placeholder | Значение |
+|-------------|----------|
+| `{key}` | Dinext key work item (обязателен в шаблоне) |
+| `{slug}` | slug из subject work item |
+| `{doctype}` | `task` или `issue` |
+| `{type_slug}` | `feature` для Task, `bugfix` для Issue |
+| `{project}` | slug Dinext project |
+
+Сервер дополнительно проверяет, что итоговое имя ветки содержит Dinext key, является корректным git ref и не конфликтует с уже существующей branch в GitLab или среди активных artifacts.
+
+Если GitLab API недоступен или у пользователя нет **GitLab Branch Token**, `can_create_branch` становится `false`, а в payload попадает `branch_error`; диалог показывает понятное сообщение об ошибке вместо preview.
 
 ### Синхронизация удалений (soft-delete)
 
@@ -119,7 +157,7 @@ bench --site your-site.local set-config developer_mode 1
 Поведение в продукте:
 
 - удалённые артефакты не учитываются в `custom_git_*` summary на `Task`/`Issue`;
-- на вкладке **Development** они не показываются (после удаления branch снова доступен **Create Branch**, если других активных branch artifacts нет);
+- на вкладке **Development** они не показываются (после удаления branch снова доступен **Create Branch**);
 - отчёты traceability и release composition учитывают только активные артефакты.
 
 Workflow automation при удалении branch сейчас не срабатывает (нет события `branch_deleted` в `Development Workflow Rule`).
@@ -136,11 +174,18 @@ Workflow automation при удалении branch сейчас не сраба�
 
 ```python
 dinext_git.api.development_panel.get_panel(doctype, name)
-dinext_git.api.gitlab_branches.preview(doctype, name, mapping_name=None)
-dinext_git.api.gitlab_branches.create(doctype, name, mapping_name=None)
+dinext_git.api.gitlab_branches.preview(doctype, name, mapping_name=None, branch_template=None, base_branch=None)
+dinext_git.api.gitlab_branches.create(doctype, name, mapping_name=None, branch_template=None, base_branch=None)
+dinext_git.api.gitlab_branches.options(doctype, name, mapping_name=None)
 dinext_git.api.gitlab_webhook_admin.sync(mapping_name, force=0)
 dinext_git.api.gitlab_webhook_admin.verify(mapping_name)
 ```
+
+`get_panel` возвращает payload вкладки Development, включая bootstrap для диалога **Create Branch** (`default_branch_template`, `default_base_branch`, `available_base_branches`, `branch_preview`).
+
+`gitlab_branches.options` возвращает template, base branch, список допустимых base branches и preview для выбранного mapping — используется при смене GitLab repository в диалоге.
+
+`gitlab_branches.preview` / `create` принимают разовый override `branch_template` и явный `base_branch`; slug для `{slug}` всегда вычисляется на сервере из subject work item.
 
 Публичный webhook endpoint:
 
@@ -240,7 +285,7 @@ bench --site your-site.local export-fixtures --app dinext_git
 - [`dinext_git/hooks.py`](dinext_git/hooks.py) — bootstrap приложения, fixtures, scheduler и client script bindings
 - [`dinext_git/api/development_panel.py`](dinext_git/api/development_panel.py) — payload вкладки Development, расчёт `show_gitlab_tab` и type visibility rules
 - [`dinext_git/api/gitlab_webhooks.py`](dinext_git/api/gitlab_webhooks.py) — публичный ingest GitLab webhooks
-- [`dinext_git/api/gitlab_branches.py`](dinext_git/api/gitlab_branches.py) — preview и создание branch
+- [`dinext_git/api/gitlab_branches.py`](dinext_git/api/gitlab_branches.py) — preview, options и создание branch из UI
 - [`dinext_git/services/gitlab/store.py`](dinext_git/services/gitlab/store.py) — persistence, `mark_artifact_deleted`, multi-mapping lookup
 - [`dinext_git/services/gitlab/projector.py`](dinext_git/services/gitlab/projector.py) — проекция summary на `Task`/`Issue` (без deleted artifacts)
 - [`dinext_git/services/gitlab/branch_actions.py`](dinext_git/services/gitlab/branch_actions.py) — бизнес-логика создания branch и user-scoped tokens
@@ -261,6 +306,8 @@ bench --site your-site.local export-fixtures --app dinext_git
 - **Initial scaffold** — базовое Frappe-приложение Dinext Git с GitLab traceability, webhook ingest, reconciliation, reports и development panel для `Task`/`Issue`.
 - **Multi-mapping** — один Dinext `Project` может ссылаться на несколько GitLab repositories через child table на вкладке `Development`.
 - **User-scoped tokens** — `Create Branch` использует персональный `User.GitLab Branch Token`.
+- **Multi-branch work items** — один `Task` или `Issue` может быть связан с несколькими branch; повторное создание branch не блокируется активной веткой.
+- **Create Branch dialog** — разовый override `branch_naming_template`, выбор `Base branch` из live-списка GitLab, bootstrap default mapping при открытии диалога; mapping defaults не перезаписываются.
 - **Type visibility rules** — child table `GitLab Type Visibility Rules` ограничивает показ вкладки Development по типам `Task`/`Issue`; пустой тип в правиле означает «разрешить все типы» для соответствующего DocType.
 - **Soft-delete sync** — удаление branch в GitLab через delete-push webhook или reconciliation orphan detection; tombstone `artifact_status = deleted`, исключение из summary, вкладки Development и отчётов.
 
@@ -359,6 +406,8 @@ flowchart LR
   P -->|GitLab Project Mappings| Repo
   P -->|Type Visibility Rules| T
   T -->|Create Branch + user token| Repo
+  T -->|options / preview / create| BranchAPI[gitlab_branches]
+  BranchAPI --> Repo
   WH -->|push / MR / pipeline| Ingest[gitlab_webhooks.receive]
   Ingest --> Normalizer[normalizer]
   Normalizer -->|upsert or soft-delete| DA
@@ -378,7 +427,7 @@ flowchart LR
 2. Разработчик работает из `Task`/`Issue`; сервер рассчитывает `show_gitlab_tab` по mapping и правилам типов.
 3. GitLab шлёт webhook в Dinext; normalizer создаёт, обновляет или помечает `deleted` для `Development Artifact` и поддерживает связи с work item.
 4. Reconciliation и webhook health jobs догоняют расхождения между GitLab и Dinext, в том числе ветки, удалённые в GitLab без доставленного webhook.
-5. UI формы запрашивает payload у `development_panel.get_panel` и отображает только активные artifacts, summary и branch actions.
+5. UI формы запрашивает payload у `development_panel.get_panel` и отображает только активные artifacts, summary и branch actions; диалог **Create Branch** использует `gitlab_branches.options`, `preview` и `create`.
 
 ## Проверка и отладка
 
@@ -388,6 +437,17 @@ flowchart LR
 bench --site your-site.local run-tests --app dinext_git
 bench --site your-site.local export-fixtures --app dinext_git
 ```
+
+### Если Create Branch недоступен или preview падает
+
+Проверьте:
+
+- заполнен ли **GitLab Branch Token** у текущего пользователя;
+- достаточно ли scope у personal token для чтения веток и создания branch в выбранном repository;
+- есть ли enabled mapping на `Project -> Development` и корректен ли `branch_naming_template` (должен содержать `{key}`);
+- ответ `can_create_branch` и `branch_error` в payload `development_panel.get_panel`;
+- доступность GitLab API для `list_branches` (список `Base branch` в диалоге);
+- что выбранная base branch существует в remote (`Base branch {0} was not found...`).
 
 ### Если webhook не сработал
 
