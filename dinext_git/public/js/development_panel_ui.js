@@ -173,18 +173,31 @@ dinext_git.development_panel.render_project_section = function (group, { strongL
 	</section>`;
 };
 
+dinext_git.development_panel.render_summary_chip = function (label, timestamp, { primary = false } = {}) {
+	const primaryClass = primary ? " dinext-git-summary-chip--primary" : "";
+	const labelText = frappe.utils.escape_html(label);
+	return `<span class="dinext-git-summary-chip text-muted${primaryClass}">
+		<span class="dinext-git-summary-chip-label">${labelText}:</span>
+		${frappe.datetime.comment_when(timestamp)}
+	</span>`;
+};
+
 dinext_git.development_panel.render_summary_meta = function (summary) {
 	const lastByType = summary.last_updated_on_by_type || {};
 	const typeEntries = Object.entries(lastByType);
 	const chips = typeEntries
-		.map(
-			([artifactType, timestamp]) =>
-				`<span class="dinext-git-summary-chip text-muted">${frappe.utils.to_title_case(artifactType.replaceAll("_", " "))}: ${frappe.datetime.comment_when(timestamp)}</span>`
+		.map(([artifactType, timestamp]) =>
+			dinext_git.development_panel.render_summary_chip(
+				frappe.utils.to_title_case(artifactType.replaceAll("_", " ")),
+				timestamp
+			)
 		)
 		.join("");
 
 	const lastUpdated = summary.last_updated_on
-		? `<span class="dinext-git-summary-chip dinext-git-summary-chip--primary text-muted">${__("Last updated")}: ${frappe.datetime.comment_when(summary.last_updated_on)}</span>`
+		? dinext_git.development_panel.render_summary_chip(__("Last updated"), summary.last_updated_on, {
+				primary: true,
+			})
 		: "";
 
 	if (!lastUpdated && !chips) {
