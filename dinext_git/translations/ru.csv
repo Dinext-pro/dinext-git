@@ -8,7 +8,7 @@
 "Last Pipeline Status","Статус последнего pipeline",""
 "Last Deployment Status","Статус последнего деплоя",""
 "Discrepancy Flags","Флаги расхождений",""
-"🌿 Create Branch","🌿 Создать ветку",""
+"⎇ Create Branch","⎇ Создать ветку",""
 "Branch preview","Предпросмотр ветки",""
 "Branch naming template","Шаблон имени ветки",""
 "GitLab project","Проект GitLab",""
@@ -60,3 +60,4 @@
 "Failed pipelines","Неуспешные pipelines",""
 "Stuck reviews","Застрявшие review",""
 "Tasks in release without merge","Задачи в релизе без merge",""
+"{0} hours ago","{0} ч. назад",""

@@ -63,6 +63,7 @@
 .dinext-git-development .dinext-git-summary-chip {
 	display: inline-flex;
 	align-items: center;
+	gap: 0.25rem;
 	padding: 0.15rem 0.5rem;
 	font-size: var(--text-xs);
 	line-height: 1.4;
