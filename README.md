@@ -340,15 +340,17 @@ POST /api/method/dinext_git.api.gitlab_webhooks.receive
 
 ### Metadata workflow
 
-Для системных объектов Frappe действует **MCP/UI first**:
+Для **Custom Field** действует **MCP/UI first**:
 
-1. изменить `DocType`, `Custom Field`, `Property Setter`, `Client Script`, `Report` в системе;
+1. изменить `Custom Field` в системе;
 2. выполнить `bench --site <site> migrate` при необходимости;
 3. синхронизировать репозиторий через `bench --site <site> export-fixtures --app dinext_git`.
 
-Для `GitLab Project Mapping` изменения полей вносятся в DocType (`dinext_git/doctype/gitlab_project_mapping/gitlab_project_mapping.json`), а не через кастомизацию этого доктайпа.
+Для DocType, Report, Number Card, Workspace — правки в module JSON под `dinext_git/dinext_git/` (или через MCP с последующим export в repo по принятому в команде workflow).
 
-**Нельзя** редактировать `fixtures/*.json` вручную.
+Для `GitLab Project Mapping` изменения полей вносятся в DocType (`dinext_git/dinext_git/doctype/gitlab_project_mapping/gitlab_project_mapping.json`), а не через кастомизацию этого доктайпа.
+
+**Нельзя** редактировать `fixtures/custom_field.json` вручную.
 
 ## ✅ Требования
 
@@ -410,6 +412,8 @@ bench --site your-site.local export-fixtures --app dinext_git
 - [`dinext_git/services/gitlab/constants.py`](dinext_git/services/gitlab/constants.py) — artifact types, development status values, webhook events, workflow events
 - [`dinext_git/services/gitlab/panel_metadata.py`](dinext_git/services/gitlab/panel_metadata.py) — author avatars, artifact decoration, timestamps для UI
 - [`dinext_git/public/js/development_panel_ui.js`](dinext_git/public/js/development_panel_ui.js) — shared UI: status pills, artifact list, GitLab project links
+- [`dinext_git/public/js/task_development.js`](dinext_git/public/js/task_development.js) — form script вкладки Development на `Task`
+- [`dinext_git/public/js/issue_development.js`](dinext_git/public/js/issue_development.js) — form script вкладки Development на `Issue`
 - [`dinext_git/public/js/task_development_list.js`](dinext_git/public/js/task_development_list.js) — list view formatter для `custom_git_development_status` на `Task`
 - [`dinext_git/public/js/issue_development_list.js`](dinext_git/public/js/issue_development_list.js) — list view formatter для `Issue`
 - [`dinext_git/public/css/development_panel.css`](dinext_git/public/css/development_panel.css) — стили вкладки Development
@@ -439,7 +443,13 @@ bench --site your-site.local export-fixtures --app dinext_git
 - **Type visibility rules** — child table `GitLab Type Visibility Rules` ограничивает показ вкладки Development по типам `Task`/`Issue`; пустой тип в правиле означает «разрешить все типы» для соответствующего DocType.
 - **Soft-delete sync** — удаление branch в GitLab через delete-push webhook или reconciliation orphan detection; tombstone `artifact_status = deleted`, исключение из summary, вкладки Development и отчётов.
 - **Meta-aware key matching** — GitLab → Dinext резолв work item по Meta naming settings `Task`/`Issue`, ручным именам, generic token fallback и `Development Key Alias`; Create Branch по-прежнему использует фактический `doc.name`.
-- **Workspace «Разработки»** — git-cockpit с Number Cards по Git-статусам и предупреждениям, shortcuts на traceability/release reports и link cards для настройки интеграции; read-доступ для `Dinext_User` к отчётам и артефактам.
+- **Workspace «Разработки»** — git-cockpit с 12 Number Cards по Git-статусам, расхождениям и предупреждениям, shortcuts на traceability/release reports и link cards для настройки интеграции; read-доступ для `Dinext_User` к отчётам и артефактам.
+- **Development Status v2** — канонические Select labels (`Not started`, `In progress`, `Merged`, `Declined`, `Pipeline failed`, `Deployed`) вместо legacy machine-codes; статус `Declined` при закрытом MR без merge; post-migrate patch для backfill.
+- **Shared development panel UI** — `development_panel_ui.js` + CSS: status pills, author chips, grouped artifacts по GitLab repository, ссылки на project/MR.
+- **List view integration** — колонка `Development Status` и formatter в `task_development_list.js` / `issue_development_list.js`.
+- **Tag/release webhook ingest** — нормализация `tag_push` и `release` events в артефакты `tag`/`release`/`deployment`.
+- **Workflow rule engine** — расширенные события MR review, pipeline, deployment; модульная структура `workflow_events.py`, `workflow_fields.py`, `workflow_sync.py`.
+- **Русская локализация** — расширенный `ru.csv` для статусов, вкладки Development и Workspace.
 
 ## 🗂️ Структура репозитория
 
@@ -453,32 +463,44 @@ bench --site your-site.local export-fixtures --app dinext_git
     ├── modules.txt
     ├── patches.txt
     ├── tasks.py
+    ├── translations/
+    │   └── ru.csv
     ├── api/
     │   ├── development_panel.py
     │   ├── gitlab_branches.py
     │   ├── gitlab_webhook_admin.py
     │   └── gitlab_webhooks.py
     ├── fixtures/
-    │   ├── client_script.json
-    │   ├── custom_field.json
-    │   ├── number_card.json
-    │   ├── property_setter.json
-    │   └── report.json
+    │   └── custom_field.json
     ├── patches/v0_0/
+    │   ├── migrate_development_status_select_values.py
     │   └── migrate_legacy_jira_aliases.py
-    ├── public/js/
-    │   ├── issue_development.js
-    │   └── task_development.js
+    ├── public/
+    │   ├── css/
+    │   │   └── development_panel.css
+    │   └── js/
+    │       ├── development_panel_ui.js
+    │       ├── issue_development.js
+    │       ├── issue_development_list.js
+    │       ├── task_development.js
+    │       └── task_development_list.js
     ├── services/
     │   ├── gitlab/
     │   │   ├── branch_actions.py
     │   │   ├── client.py
+    │   │   ├── constants.py
     │   │   ├── matcher.py
     │   │   ├── normalizer.py
+    │   │   ├── panel_metadata.py
+    │   │   ├── payloads.py
     │   │   ├── projector.py
     │   │   ├── reconcile.py
     │   │   ├── store.py
+    │   │   ├── utils.py
+    │   │   ├── validators.py
     │   │   ├── webhook_admin.py
+    │   │   ├── workflow_events.py
+    │   │   ├── workflow_fields.py
     │   │   └── workflow_sync.py
     │   └── reports/
     │       ├── release_composition.py
@@ -486,15 +508,32 @@ bench --site your-site.local export-fixtures --app dinext_git
     ├── tests/
     │   ├── test_branch_actions.py
     │   ├── test_development_panel_payload.py
+    │   ├── test_development_status_migration.py
     │   ├── test_development_workspace.py
     │   ├── test_dev_status_projection.py
+    │   ├── test_gitlab_event_log.py
+    │   ├── test_gitlab_webhook_admin.py
     │   ├── test_gitlab_webhook_ingest.py
+    │   ├── test_gitlab_webhook_receive.py
     │   ├── test_legacy_alias_migration.py
     │   ├── test_matcher.py
+    │   ├── test_panel_metadata.py
     │   ├── test_reconciliation.py
+    │   ├── test_release_composition_report.py
     │   ├── test_traceability_reports.py
-    │   └── test_utils.py
+    │   ├── test_translations.py
+    │   ├── test_utils.py
+    │   ├── test_webhook_payload.py
+    │   └── test_workflow_sync.py
     └── dinext_git/
+        ├── number_card/
+        │   ├── git_dev_tasks_in_progress/
+        │   ├── git_dev_tasks_merged/
+        │   ├── git_dev_tasks_deployed/
+        │   ├── git_dev_tasks_declined/
+        │   ├── git_dev_tasks_discrepancies/
+        │   ├── git_dev_tasks_pipeline_failed/
+        │   └── … (Issue-варианты)
         ├── workspace/
         │   └── разработки/
         │       └── разработки.json
@@ -516,10 +555,12 @@ bench --site your-site.local export-fixtures --app dinext_git
 Пояснения к структуре:
 
 - `dinext_git/dinext_git/doctype/` содержит metadata-backed определения DocType и контроллеры.
-- `dinext_git/services/gitlab/` содержит GitLab client, webhook normalization, reconciliation, branch actions и projection summary.
+- `dinext_git/dinext_git/number_card/` и `dinext_git/dinext_git/workspace/` — module metadata для git-cockpit; синхронизируются через `bench migrate`.
+- `dinext_git/services/gitlab/` содержит GitLab client, webhook normalization, reconciliation, branch actions, constants и projection summary.
 - `dinext_git/api/` содержит whitelisted endpoints для UI, webhook admin и публичного ingest.
-- `dinext_git/public/js/` содержит client scripts форм `Task` и `Issue` для вкладки Development.
-- `dinext_git/fixtures/` содержит экспортированные metadata-объекты; редактируются только через MCP/UI и export-fixtures.
+- `dinext_git/public/js/` и `public/css/` — client scripts форм `Task`/`Issue`, list view formatters и shared UI вкладки Development.
+- `dinext_git/fixtures/custom_field.json` — экспортированные Custom Field; редактируется только через MCP/UI и export-fixtures.
+- `dinext_git/translations/ru.csv` — русские переводы UI и статусов.
 - `dinext_git/tests/` содержит интеграционные и unit-тесты traceability-потока.
 
 ## 🔗 Flow Chart
@@ -658,7 +699,7 @@ bench --site your-site.local export-fixtures --app dinext_git
 - выполнен ли `bench --site <site> migrate` после обновления репозитория;
 - есть ли у пользователя роль `Dinext_User` или `System Manager`;
 - в Desk → Workspace существует запись **Разработки** модуля Dinext Git;
-- Number Cards из fixture `number_card.json` импортированы (модуль Dinext Git).
+- Number Cards из `dinext_git/dinext_git/number_card/` синхронизированы через `bench migrate` (модуль Dinext Git).
 
 ## Отчёты
 
