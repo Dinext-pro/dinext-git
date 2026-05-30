@@ -24,6 +24,7 @@
   "title",
   "author_name",
   "author_email",
+  "author_avatar_url",
   "payload_json"
  ],
  "fields": [
@@ -121,6 +122,11 @@
    "fieldname": "author_email",
    "fieldtype": "Data",
    "label": "Author Email"
+  },
+  {
+   "fieldname": "author_avatar_url",
+   "fieldtype": "Data",
+   "label": "Author Avatar URL"
   },
   {
    "fieldname": "payload_json",

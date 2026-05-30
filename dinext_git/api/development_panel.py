@@ -7,6 +7,11 @@ from frappe import _
 
 from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
 from dinext_git.services.gitlab.branch_actions import DEFAULT_BRANCH_TEMPLATE, get_branch_dialog_options, preview_branch
+from dinext_git.services.gitlab.panel_metadata import (
+	build_summary_timestamps,
+	build_user_avatar_lookup,
+	decorate_artifact_row,
+)
 from dinext_git.services.gitlab.projector import collect_work_item_summary
 from dinext_git.services.gitlab.store import get_default_mapping_for_project, get_mappings_for_project
 
@@ -139,17 +144,25 @@ def _panel_payload(doctype: str, name: str) -> dict:
 				"source_branch",
 				"target_branch",
 				"commit_sha",
+				"author_name",
+				"author_email",
+				"author_avatar_url",
 				"modified",
 			],
 			order_by="modified desc",
 		)
 		artifact_rows = [row for row in artifact_rows if row.get("artifact_status") != DELETED_ARTIFACT_STATUS]
+		user_lookup = build_user_avatar_lookup([row.get("author_email") for row in artifact_rows])
 		link_by_artifact = {row["artifact"]: row for row in links}
 		for artifact in artifact_rows:
 			artifact["link"] = link_by_artifact.get(artifact["name"])
 			artifact["artifact_type_label"] = frappe.unscrub(artifact["artifact_type"] or "")
 			artifact["artifact_status_label"] = frappe.unscrub(artifact["artifact_status"] or "n/a")
-			artifacts.append(artifact)
+			artifacts.append(decorate_artifact_row(artifact, user_lookup))
+
+	last_updated_on, last_updated_on_by_type = build_summary_timestamps(artifacts)
+	summary["last_updated_on"] = last_updated_on
+	summary["last_updated_on_by_type"] = last_updated_on_by_type
 
 	mapping_lookup = {row["name"]: row for row in mappings}
 	grouped = {}

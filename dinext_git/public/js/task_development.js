@@ -278,52 +278,14 @@ async function render_dinext_git_panel(frm) {
 		showTab: true,
 		showButton: Boolean(payload.can_create_branch),
 	});
-	const summary = payload.summary || {};
-	const sections = Object.values(payload.grouped_artifacts || {})
-		.map((group) => {
-			const typeSections = Object.entries(group.artifacts_by_type || {})
-				.map(([artifactType, rows]) => {
-					const items = rows
-						.map((row) => {
-							const label = row.artifact_name || row.ref_name || row.name;
-							const link = row.web_url
-								? `<a href="${row.web_url}" target="_blank" rel="noopener noreferrer">${label}</a>`
-								: label;
-							return `<li><strong>${link}</strong> <span class="text-muted">(${row.artifact_status_label || row.artifact_status || "n/a"})</span></li>`;
-						})
-						.join("");
-					return `<div class="mb-3"><h6>${frappe.utils.to_title_case((rows[0]?.artifact_type_label || artifactType).replaceAll("_", " "))}</h6><ul>${items}</ul></div>`;
-				})
-				.join("");
-			const defaultBadge = group.is_default ? `<span class="indicator-pill green ml-2">${__("Default")}</span>` : "";
-			return `<div class="mb-4">
-				<h5>${group.gitlab_project_path}${defaultBadge}</h5>
-				${typeSections}
-			</div>`;
-		})
-		.join("");
 
-	const flags = (summary.discrepancy_badges || [])
-		.map((flag) => `<span class="indicator-pill red" title="${flag.code}">${flag.label}</span>`)
-		.join(" ");
-	const statusCount = Number(summary.status_merge_request_count || 0);
-	const statusCountTitle = frappe.utils.escape_html(summary.status_merge_request_label || __("Merge requests"));
-	const statusCountMarkup = statusCount
-		? summary.status_merge_request_url
-			? ` <a href="${summary.status_merge_request_url}" target="_blank" rel="noopener noreferrer" title="${statusCountTitle}">(${statusCount})</a>`
-			: ` <span class="text-muted" title="${statusCountTitle}">(${statusCount})</span>`
-		: "";
-	const body = sections || `<p class="text-muted">${payload.empty_state_message || __("No development activity yet.")}</p>`;
-
-	panel.$wrapper.html(
-		`<div class="dinext-git-development">
-			<div class="mb-2">
-				<strong>${__("Development status")}:</strong> ${summary.development_status_label || __("Not started")}${statusCountMarkup}
-				${flags ? `<div class="mt-2">${flags}</div>` : ""}
-			</div>
-			${body}
-		</div>`
-	);
+	frappe.require(["/assets/dinext_git/js/development_panel_ui.js"], () => {
+		dinext_git.development_panel.ensure_assets(() => {
+			panel.$wrapper.html(
+				dinext_git.development_panel.render_panel_html(payload, { strongLink: true })
+			);
+		});
+	});
 }
 
 frappe.ui.form.on("Task", {

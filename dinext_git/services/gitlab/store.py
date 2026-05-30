@@ -214,6 +214,7 @@ def build_artifact_payload(
 		"title": data.get("title"),
 		"author_name": data.get("author_name"),
 		"author_email": data.get("author_email"),
+		"author_avatar_url": data.get("author_avatar_url"),
 		"payload_json": json_dumps(data),
 	}
 
