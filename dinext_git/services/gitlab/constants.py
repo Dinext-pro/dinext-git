@@ -34,6 +34,7 @@ ALIAS_TYPES = (
 WORKFLOW_EVENTS = (
 	"branch_created",
 	"branch_linked",
+	"branch_deleted",
 	"mr_opened",
 	"mr_review_started",
 	"mr_changes_requested",

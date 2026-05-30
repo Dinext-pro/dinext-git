@@ -11,6 +11,7 @@
   "target_doctype",
   "project",
   "development_event",
+  "target_fieldname",
   "target_status",
   "only_when_current_status",
   "priority",
@@ -38,20 +39,28 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Development Event",
-   "options": "branch_created\nbranch_linked\nmr_opened\nmr_review_started\nmr_changes_requested\nmr_approved\nmr_merged\npipeline_failed\npipeline_succeeded\ndeployment_succeeded",
+   "options": "branch_created\nbranch_linked\nbranch_deleted\nmr_opened\nmr_review_started\nmr_changes_requested\nmr_approved\nmr_merged\npipeline_failed\npipeline_succeeded\ndeployment_succeeded",
+   "reqd": 1
+  },
+  {
+   "default": "status",
+   "fieldname": "target_fieldname",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Target Field",
    "reqd": 1
   },
   {
    "fieldname": "target_status",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Target Status",
+   "label": "Target Value",
    "reqd": 1
   },
   {
    "fieldname": "only_when_current_status",
-   "fieldtype": "Data",
-   "label": "Only When Current Status"
+   "fieldtype": "Select",
+   "label": "Only When Current Value"
   },
   {
    "default": "10",
@@ -82,7 +91,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-28 03:39:21.736697",
+ "modified": "2026-05-30 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Dinext Git",
  "name": "Development Workflow Rule",

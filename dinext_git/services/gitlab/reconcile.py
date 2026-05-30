@@ -17,6 +17,7 @@ from dinext_git.services.gitlab.projector import update_work_item_summary
 from dinext_git.services.gitlab.store import get_mapping, mark_artifact_deleted
 from dinext_git.services.gitlab.webhook_admin import verify_mapping_webhook
 from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
+from dinext_git.services.gitlab.workflow_sync import apply_rules
 
 
 def _touch_cursor(mapping_name: str, artifact_type: str, *, status: str, error: str | None = None) -> None:
@@ -46,6 +47,24 @@ def _touch_cursor(mapping_name: str, artifact_type: str, *, status: str, error: 
 				"last_finished_on": values["last_finished_on"],
 			}
 		).insert(ignore_permissions=True)
+
+
+def _apply_branch_deleted_workflow(deleted_artifact_names: list[str]) -> None:
+	if not deleted_artifact_names:
+		return
+
+	links = frappe.get_all(
+		"Development Artifact Link",
+		filters={"artifact": ["in", deleted_artifact_names]},
+		fields=["target_doctype", "target_name"],
+	)
+	seen: set[tuple[str, str]] = set()
+	for link in links:
+		target_key = (link["target_doctype"], link["target_name"])
+		if target_key in seen:
+			continue
+		seen.add(target_key)
+		apply_rules(link["target_doctype"], link["target_name"], "branch_deleted")
 
 
 def _update_summaries_for_artifacts(artifact_names: set[str]) -> None:
@@ -176,6 +195,7 @@ def reconcile_mapping(mapping_name: str) -> dict[str, Any]:
 	results["branches_deleted"] = len(deleted_branch_artifacts)
 	touched_artifact_names.update(deleted_branch_artifacts)
 	_update_summaries_for_artifacts(touched_artifact_names)
+	_apply_branch_deleted_workflow(deleted_branch_artifacts)
 
 	return results
 
