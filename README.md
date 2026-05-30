@@ -16,7 +16,7 @@
 - поддержка нескольких branch для одного `Task`/`Issue`, включая несколько branch в одном GitLab repository
 - персональные GitLab token на уровне `User` для `Create Branch` без fallback на system token
 - автоматическая регистрация, проверка и восстановление GitLab webhooks из Dinext
-- ingest GitLab webhooks (`push`, `merge request`, `pipeline`) с event log и idempotent normalization
+- ingest GitLab webhooks (`push`, `merge request`, `pipeline`, `tag push`, `release`) с event log и idempotent normalization
 - soft-delete синхронизация: удалённые в GitLab объекты помечаются в Dinext как `artifact_status = deleted` и исключаются из summary, вкладки Development и отчётов (история и связи сохраняются)
 - generic model артефактов разработки (`Development Artifact`, `Development Artifact Link`)
 - проекция dev summary в стандартные `Task` и `Issue`
@@ -25,6 +25,7 @@
 - Script Reports для traceability exceptions и release composition
 - scheduled reconciliation и webhook health checks
 - миграция legacy Jira-style keys в `Development Key Alias`
+- meta-aware сопоставление Dinext key при ingest GitLab metadata: маски именования берутся из Meta `Task`/`Issue`, поддерживаются ручные имена и alias registry
 
 ### Границы приложения
 
@@ -106,8 +107,41 @@ bench --site your-site.local set-config developer_mode 1
 5. Диалог **Create Branch** открывается уже с default GitLab repository, его `branch_naming_template` и `default_base_branch`. Пользователь может разово изменить шаблон (без сохранения в mapping) и выбрать `Base branch` из live-списка веток GitLab; итоговое имя ветки Dinext preview рассчитывает на сервере.
 6. Один `Task`/`Issue` может иметь несколько branch artifacts; повторное создание branch не блокируется уже существующей активной веткой.
 7. Если у проекта несколько GitLab mapping, Dinext использует **Default Mapping** для initial preview; при нескольких mapping без default — первый enabled mapping. В диалоге можно выбрать другой repository.
-8. Рекомендуемая конвенция именования: ветка, MR title и commit message должны содержать **Dinext key**.
-9. Legacy Jira keys продолжают резолвиться через alias registry, но canonical reference для новых артефактов — Dinext key.
+8. Рекомендуемая конвенция именования: ветка, MR title и commit message должны содержать **Dinext key** (фактический `name` work item).
+9. Legacy Jira keys и другие альтернативные идентификаторы резолвятся через `Development Key Alias`; canonical reference для новых артефактов — Dinext key.
+
+### Сопоставление Dinext key (GitLab → Dinext)
+
+Обратный мэппинг work item из branch/MR/commit/pipeline metadata выполняется в [`matcher.py`](dinext_git/services/gitlab/matcher.py) через `resolve_keys()`. Вызывается из [`normalizer.py`](dinext_git/services/gitlab/normalizer.py) при ingest webhook и reconciliation.
+
+| Направление | Источник ключа | Поведение |
+|-------------|----------------|-----------|
+| Dinext → GitLab | `doc.name` | **Create Branch** всегда подставляет фактический `name` в `{key}` шаблона ветки |
+| GitLab → Dinext | branch, MR title/description, commit message, pipeline ref | Извлечение кандидатов + verify по `Task`/`Issue` и alias registry |
+
+Извлечение кандидатов — двухуровневое:
+
+1. **Meta-derived patterns** — regex строятся из `frappe.get_meta()` для `Task` и `Issue`:
+   - expression autoname (например `TASK-.YYYY.-.#####`);
+   - `naming_series:` и все options поля `naming_series` (например `ISS-.YYYY.-` → `ISS-.YYYY.-.#####`).
+   - учитываются Property Setter и другие metadata overrides, уже включённые в Meta.
+2. **Fallback** — enabled записи `Development Key Alias`, generic token extraction с усечением branch slug suffix (`feature/{key}-sample` → `{key}`), legacy Jira-style pattern.
+
+Резолв кандидата:
+
+- exact match по `name` в `Task` или `Issue` (исходный регистр и upper-case);
+- иначе lookup в `Development Key Alias`.
+
+Сценарии:
+
+| Сценарий | Create Branch | Автолинковка из GitLab |
+|----------|---------------|------------------------|
+| Стандартный Task/Issue key по naming series | OK | OK |
+| Ручное имя work item (`prompt`, import, кастомный `name`) | OK | OK через generic fallback + verify |
+| Legacy Jira key | OK, если key в ветке — Dinext name | OK через `Development Key Alias` |
+| Кастомная naming series на сайте | OK | OK после изменения Meta (кэш matcher обновляется при restart worker / `clear_matcher_caches`) |
+
+Если ключ не распознаётся автоматически, добавьте запись в **Development Key Alias** с типом `Dinext Key` или `Jira Legacy Key`.
 
 ### Диалог Create Branch
 
@@ -152,7 +186,7 @@ UI-логика в [`task_development.js`](dinext_git/public/js/task_development
 | Канал | Когда срабатывает | Что делает |
 |-------|-------------------|------------|
 | Webhook `Push Hook` | GitLab прислал delete-push (`after` / `checkout_sha` — all-zero SHA) | Помечает branch artifact как `deleted`, не создаёт commit artifacts, пересчитывает `custom_git_*` у связанных `Task`/`Issue`, применяет `Development Workflow Rule` для события `branch_deleted` |
-| Scheduled reconciliation | Hourly/daily job `reconcile_mapping` | Сверяет список веток в GitLab с локальными branch artifacts; отсутствующие в remote помечает `deleted`, обновляет summary затронутых work items и применяет `branch_deleted` workflow rules |
+| Scheduled reconciliation | Hourly/daily job `reconcile_mapping` | Сверяет MR/pipeline/release через GitLab API и список веток с локальными artifacts; отсутствующие в remote branch помечает `deleted`, обновляет summary затронутых work items и применяет `branch_deleted` workflow rules |
 
 Поведение в продукте:
 
@@ -207,7 +241,10 @@ dinext_git.api.gitlab_branches.create(doctype, name, mapping_name=None, branch_t
 dinext_git.api.gitlab_branches.options(doctype, name, mapping_name=None)
 dinext_git.api.gitlab_webhook_admin.sync(mapping_name, force=0)
 dinext_git.api.gitlab_webhook_admin.verify(mapping_name)
+dinext_git.api.gitlab_webhook_admin.verify_and_sync_instance(instance_name)
 ```
+
+На форме **GitLab Instance** доступна кнопка **Verify and Sync Webhooks**: для всех enabled `GitLab Project Mapping` этого instance выполняется `verify`, затем `sync` только для статусов `missing`, `drifted` и `failed`. Итог показывается в Desk summary.
 
 `get_panel` возвращает payload вкладки Development, включая bootstrap для диалога **Create Branch** (`default_branch_template`, `default_base_branch`, `available_base_branches`, `branch_preview`).
 
@@ -316,12 +353,14 @@ bench --site your-site.local export-fixtures --app dinext_git
 - [`dinext_git/services/gitlab/store.py`](dinext_git/services/gitlab/store.py) — persistence, `mark_artifact_deleted`, multi-mapping lookup
 - [`dinext_git/services/gitlab/projector.py`](dinext_git/services/gitlab/projector.py) — проекция summary на `Task`/`Issue` (без deleted artifacts)
 - [`dinext_git/services/gitlab/branch_actions.py`](dinext_git/services/gitlab/branch_actions.py) — бизнес-логика создания branch и user-scoped tokens
+- [`dinext_git/services/gitlab/matcher.py`](dinext_git/services/gitlab/matcher.py) — meta-aware извлечение и резолв Dinext key из GitLab metadata
 - [`dinext_git/services/gitlab/normalizer.py`](dinext_git/services/gitlab/normalizer.py) — нормализация webhook payload в артефакты
 - [`dinext_git/services/gitlab/reconcile.py`](dinext_git/services/gitlab/reconcile.py) — reconciliation и webhook health
 - [`dinext_git/public/js/task_development.js`](dinext_git/public/js/task_development.js) — UI вкладки Development на `Task`
 - [`dinext_git/public/js/issue_development.js`](dinext_git/public/js/issue_development.js) — UI вкладки Development на `Issue`
 - [`dinext_git/dinext_git/doctype/gitlab_type_visibility_rule/gitlab_type_visibility_rule.json`](dinext_git/dinext_git/doctype/gitlab_type_visibility_rule/gitlab_type_visibility_rule.json) — child table правил видимости по типам
 - [`dinext_git/tests/test_development_panel_payload.py`](dinext_git/tests/test_development_panel_payload.py) — тесты payload и type visibility
+- [`dinext_git/tests/test_matcher.py`](dinext_git/tests/test_matcher.py) — тесты meta-aware key matching и webhook linking
 
 ## ❤️ Благодарности
 
@@ -337,6 +376,7 @@ bench --site your-site.local export-fixtures --app dinext_git
 - **Create Branch dialog** — разовый override `branch_naming_template`, выбор `Base branch` из live-списка GitLab, bootstrap default mapping при открытии диалога; mapping defaults не перезаписываются.
 - **Type visibility rules** — child table `GitLab Type Visibility Rules` ограничивает показ вкладки Development по типам `Task`/`Issue`; пустой тип в правиле означает «разрешить все типы» для соответствующего DocType.
 - **Soft-delete sync** — удаление branch в GitLab через delete-push webhook или reconciliation orphan detection; tombstone `artifact_status = deleted`, исключение из summary, вкладки Development и отчётов.
+- **Meta-aware key matching** — GitLab → Dinext резолв work item по Meta naming settings `Task`/`Issue`, ручным именам, generic token fallback и `Development Key Alias`; Create Branch по-прежнему использует фактический `doc.name`.
 
 ## 🗂️ Структура репозитория
 
@@ -385,6 +425,7 @@ bench --site your-site.local export-fixtures --app dinext_git
     │   ├── test_dev_status_projection.py
     │   ├── test_gitlab_webhook_ingest.py
     │   ├── test_legacy_alias_migration.py
+    │   ├── test_matcher.py
     │   ├── test_reconciliation.py
     │   ├── test_traceability_reports.py
     │   └── test_utils.py
@@ -487,6 +528,16 @@ bench --site your-site.local export-fixtures --app dinext_git
 - `GitLab Project Mapping.webhook_last_error`
 - scheduler job `verify_webhook_health`
 
+### Если артефакт не связался с Task/Issue
+
+Проверьте:
+
+- branch/MR title/commit message содержит **фактический Dinext key** (`name` документа), а не только subject или legacy alias;
+- для нестандартных имён и кастомных naming series — есть ли запись в **Development Key Alias**;
+- после изменения `autoname` / `naming_series` у `Task` или `Issue` перезапустите workers (matcher кэширует Meta patterns);
+- `Development Artifact Link.extracted_key` и `link_source` в связанном artifact — помогает понять, какой текст распознал matcher;
+- отчёт **GitLab Traceability Exceptions** и тесты [`test_matcher.py`](dinext_git/tests/test_matcher.py) как reference для ожидаемого поведения.
+
 ### Если reconciliation отстаёт
 
 Проверьте:
@@ -539,7 +590,7 @@ bench --site your-site.local export-fixtures --app dinext_git
   - stuck reviews
   - tasks in release without merge
 - **GitLab Release Composition**
-  - состав релиза по задачам Dinext и фактам GitLab
+  - состав релиза по задачам Dinext и фактам GitLab (`release`, `tag`, `deployment` при наличии merged MR)
 
 ## License
 

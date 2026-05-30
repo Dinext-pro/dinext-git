@@ -7,7 +7,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from dinext_git.services.gitlab.reconcile import reconcile_mapping
 from dinext_git.services.gitlab.store import build_artifact_link_payload, build_artifact_payload, upsert_artifact, upsert_artifact_link
-from dinext_git.tests.test_utils import make_gitlab_instance, make_mapping, make_project
+from dinext_git.tests.test_utils import make_gitlab_instance, make_mapping, make_project, make_task
 
 
 class TestReconciliation(FrappeTestCase):
@@ -20,11 +20,14 @@ class TestReconciliation(FrappeTestCase):
 		client = client_cls.return_value
 		client.list_merge_requests.return_value = []
 		client.list_pipelines.return_value = []
+		client.list_releases.return_value = []
 
 		result = reconcile_mapping(mapping)
 
 		self.assertEqual(result["merge_requests"], 0)
 		self.assertEqual(result["pipelines"], 0)
+		self.assertEqual(result["releases"], 0)
+		self.assertTrue(frappe.db.get_value("GitLab Project Mapping", mapping, "last_reconciled_release_at"))
 
 	def test_project_can_have_multiple_enabled_mappings(self):
 		project = make_project()
@@ -78,9 +81,46 @@ class TestReconciliation(FrappeTestCase):
 		client.get_project.return_value = {"id": 99}
 		client.list_merge_requests.return_value = []
 		client.list_pipelines.return_value = []
+		client.list_releases.return_value = []
 		client.list_branches.return_value = []
 
 		result = reconcile_mapping(mapping)
 
 		self.assertEqual(result["branches_deleted"], 1)
 		self.assertEqual(frappe.db.get_value("Development Artifact", artifact, "artifact_status"), "deleted")
+
+	@patch("dinext_git.services.gitlab.reconcile.GitLabClient")
+	def test_reconciliation_upserts_release_artifacts(self, client_cls):
+		project = make_project()
+		task = make_task(project)
+		instance = make_gitlab_instance()
+		mapping = make_mapping(project, instance)
+
+		client = client_cls.return_value
+		client.list_merge_requests.return_value = []
+		client.list_pipelines.return_value = []
+		client.list_branches.return_value = []
+		client.list_releases.return_value = [
+			{
+				"tag_name": f"v1-{task}",
+				"name": f"Release {task}",
+				"description": f"Includes {task}",
+				"_links": {"self": f"https://gitlab.example.com/-/releases/v1-{task}"},
+				"commit": {
+					"id": "abc",
+					"message": f"{task} release commit",
+					"title": "Release",
+				},
+			}
+		]
+
+		result = reconcile_mapping(mapping)
+
+		self.assertEqual(result["releases"], 1)
+		artifact_name = frappe.db.get_value(
+			"Development Artifact",
+			{"artifact_type": "release", "external_id": f"v1-{task}"},
+			"name",
+		)
+		self.assertTrue(artifact_name)
+		self.assertTrue(frappe.db.get_value("GitLab Project Mapping", mapping, "last_reconciled_release_at"))

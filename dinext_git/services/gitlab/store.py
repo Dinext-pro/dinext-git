@@ -164,13 +164,23 @@ def mark_artifact_deleted(
 	external_id: str,
 	payload: dict[str, Any] | None = None,
 ) -> str | None:
-	deleted = mark_branch_artifacts_deleted(
+	if artifact_type == "branch":
+		deleted = mark_branch_artifacts_deleted(
+			instance=instance,
+			mapping=mapping,
+			external_id=external_id,
+			payload=payload,
+			project_id=None,
+			project_path=None,
+		)
+		return deleted[0] if deleted else None
+
+	deleted = mark_artifacts_deleted(
 		instance=instance,
 		mapping=mapping,
+		artifact_type=artifact_type,
 		external_id=external_id,
 		payload=payload,
-		project_id=None,
-		project_path=None,
 	)
 	return deleted[0] if deleted else None
 
@@ -261,6 +271,91 @@ def find_branch_artifacts_for_delete(
 				found.append(artifact_name)
 
 	return found
+
+
+def find_artifacts_for_delete(
+	*,
+	instance: str,
+	artifact_type: str,
+	external_id: str,
+	mapping: str | None = None,
+	project_id: str | int | None = None,
+	project_path: str | None = None,
+) -> list[str]:
+	mapping_names = _mapping_names_for_gitlab_project(
+		instance,
+		mapping=mapping,
+		project_id=project_id,
+		project_path=project_path,
+	)
+	if not mapping_names:
+		return []
+
+	found: list[str] = []
+	seen: set[str] = set()
+
+	for mapping_name in mapping_names:
+		artifact_uid = make_uid(instance, mapping_name, artifact_type, external_id)
+		artifact_name = find_non_deleted_artifact_name(
+			{"artifact_uid": artifact_uid, "artifact_type": artifact_type}
+		)
+		if artifact_name and artifact_name not in seen:
+			seen.add(artifact_name)
+			found.append(artifact_name)
+			continue
+
+		artifact_name = find_non_deleted_artifact_name(
+			{
+				"gitlab_instance": instance,
+				"project_mapping": mapping_name,
+				"artifact_type": artifact_type,
+				"external_id": external_id,
+			}
+		)
+		if artifact_name and artifact_name not in seen:
+			seen.add(artifact_name)
+			found.append(artifact_name)
+
+	return found
+
+
+def mark_artifacts_deleted(
+	*,
+	instance: str,
+	artifact_type: str,
+	external_id: str,
+	payload: dict[str, Any] | None = None,
+	mapping: str | None = None,
+	project_id: str | int | None = None,
+	project_path: str | None = None,
+	identity_fields: dict[str, Any] | None = None,
+) -> list[str]:
+	artifact_names = find_artifacts_for_delete(
+		instance=instance,
+		artifact_type=artifact_type,
+		external_id=external_id,
+		mapping=mapping,
+		project_id=project_id,
+		project_path=project_path,
+	)
+	if not artifact_names:
+		return []
+
+	values: dict[str, Any] = {"artifact_status": DELETED_ARTIFACT_STATUS}
+	if payload is not None:
+		values["payload_json"] = json_dumps(payload)
+	if identity_fields:
+		values.update(identity_fields)
+
+	for artifact_name in artifact_names:
+		frappe.db.set_value(
+			"Development Artifact",
+			artifact_name,
+			values,
+			update_modified=True,
+		)
+
+	return artifact_names
 
 
 def mark_branch_artifacts_deleted(

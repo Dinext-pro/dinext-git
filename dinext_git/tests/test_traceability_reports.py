@@ -60,3 +60,25 @@ class TestTraceabilityReports(FrappeTestCase):
 
 		rows = run("tasks_without_mr")
 		self.assertFalse(any(row["name"] == task for row in rows))
+
+	def test_tasks_in_release_without_merge_includes_tag_without_merged_mr(self):
+		project = make_project()
+		task = make_task(project)
+		instance = make_gitlab_instance()
+		mapping = make_mapping(project, instance)
+
+		tag = upsert_artifact(
+			build_artifact_payload(
+				instance=instance,
+				mapping=mapping,
+				artifact_type="tag",
+				external_id=f"release-{task}",
+				data={"artifact_name": f"release-{task}", "artifact_status": "active"},
+			)
+		)
+		upsert_artifact_link(
+			build_artifact_link_payload(artifact=tag, target_doctype="Task", target_name=task, link_source="release_ref")
+		)
+
+		rows = run("tasks_in_release_without_merge")
+		self.assertTrue(any(row["target_name"] == task for row in rows))

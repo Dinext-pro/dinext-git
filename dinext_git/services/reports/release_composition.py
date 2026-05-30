@@ -6,7 +6,7 @@ from collections import defaultdict
 
 import frappe
 
-from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
+from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS, RELEASE_SIDE_ARTIFACT_TYPES
 
 
 def run(filters: dict | None = None) -> list[dict]:
@@ -38,7 +38,7 @@ def run(filters: dict | None = None) -> list[dict]:
 		release_artifacts = [
 			artifact_map[link["artifact"]]
 			for link in target_links
-			if artifact_map.get(link["artifact"], {}).get("artifact_type") in {"release", "tag", "deployment"}
+			if artifact_map.get(link["artifact"], {}).get("artifact_type") in RELEASE_SIDE_ARTIFACT_TYPES
 		]
 		if not release_artifacts:
 			continue

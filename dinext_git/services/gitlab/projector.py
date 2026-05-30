@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 
 import frappe
 
-from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
+from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS, RELEASE_SIDE_ARTIFACT_TYPES
 from dinext_git.services.gitlab.store import get_instance, get_mapping
 
 OPEN_MERGE_REQUEST_STATES = {"open", "opened", "reopen", "reopened"}
@@ -117,7 +117,8 @@ def collect_work_item_summary(target_doctype: str, target_name: str) -> dict[str
 		for artifact in artifacts
 	):
 		flags.append("pipeline_failed")
-	if type_counter.get("release", 0) and not any(
+	has_release_side = any(artifact["artifact_type"] in RELEASE_SIDE_ARTIFACT_TYPES for artifact in artifacts)
+	if has_release_side and not any(
 		artifact["artifact_type"] == "merge_request" and artifact["artifact_status"] == "merged"
 		for artifact in artifacts
 	):

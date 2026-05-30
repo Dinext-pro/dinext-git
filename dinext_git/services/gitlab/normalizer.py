@@ -10,6 +10,7 @@ from dinext_git.services.gitlab.matcher import resolve_keys
 from dinext_git.services.gitlab.store import (
 	build_artifact_link_payload,
 	build_artifact_payload,
+	mark_artifacts_deleted,
 	mark_branch_artifacts_deleted,
 	upsert_artifact,
 	upsert_artifact_link,
@@ -18,10 +19,12 @@ from dinext_git.services.gitlab.store import (
 from dinext_git.services.gitlab.utils import (
 	branch_name_from_ref,
 	is_branch_ref,
+	is_tag_ref,
 	json_dumps,
 	make_uid,
 	project_id_from_payload,
 	project_path_from_payload,
+	tag_name_from_ref,
 )
 
 
@@ -86,6 +89,38 @@ def is_branch_delete_push(payload: dict[str, Any]) -> bool:
 
 	checkout_sha = payload.get("checkout_sha")
 	return _is_zero_sha(after) or _is_zero_sha(checkout_sha)
+
+
+def is_tag_delete_push(payload: dict[str, Any]) -> bool:
+	if not is_tag_ref(payload.get("ref")):
+		return False
+
+	before = payload.get("before")
+	after = payload.get("after")
+	if before and not _is_zero_sha(before) and _is_zero_sha(after):
+		return True
+
+	checkout_sha = payload.get("checkout_sha")
+	return _is_zero_sha(after) or _is_zero_sha(checkout_sha)
+
+
+def _release_external_id(payload: dict[str, Any]) -> str | None:
+	tag = payload.get("tag") or payload.get("tag_name")
+	if tag:
+		return str(tag)
+	release_id = payload.get("id")
+	return str(release_id) if release_id not in (None, "") else None
+
+
+def _release_link_texts(payload: dict[str, Any]) -> tuple[str | None, ...]:
+	commit = payload.get("commit") or {}
+	return (
+		payload.get("tag") or payload.get("tag_name"),
+		payload.get("name"),
+		payload.get("description"),
+		commit.get("message"),
+		commit.get("title"),
+	)
 
 
 def normalize_push_event(instance: str, mapping: str | None, payload: dict[str, Any]) -> dict[str, Any]:
@@ -268,3 +303,121 @@ def normalize_pipeline_event(instance: str, mapping: str | None, payload: dict[s
 			_link_resolved_keys(deployment_artifact, resolved, "deployment_ref")
 
 	return {"pipeline": pipeline_artifact, "jobs": job_artifacts}
+
+
+def normalize_tag_push_event(instance: str, mapping: str | None, payload: dict[str, Any]) -> dict[str, Any]:
+	tag_name = tag_name_from_ref(payload.get("ref"))
+	if not tag_name:
+		return {}
+
+	if is_tag_delete_push(payload):
+		deleted_tags = mark_artifacts_deleted(
+			instance=instance,
+			mapping=mapping,
+			artifact_type="tag",
+			external_id=tag_name,
+			payload=payload,
+			project_id=project_id_from_payload(payload),
+			project_path=project_path_from_payload(payload),
+			identity_fields={
+				"artifact_name": tag_name,
+				"ref_name": tag_name,
+			},
+		)
+		return {"tag": deleted_tags[0] if deleted_tags else None, "tags": deleted_tags}
+
+	commit_messages = [commit.get("message") for commit in payload.get("commits", []) if commit.get("message")]
+	resolved = resolve_keys(tag_name, *commit_messages)
+	commit_sha = payload.get("checkout_sha") or payload.get("after")
+	tag_artifact = upsert_artifact(
+		build_artifact_payload(
+			instance=instance,
+			mapping=mapping,
+			artifact_type="tag",
+			external_id=tag_name,
+			data={
+				"artifact_name": tag_name,
+				"ref_name": tag_name,
+				"artifact_status": "active",
+				"web_url": (payload.get("project") or {}).get("web_url"),
+				"commit_sha": commit_sha,
+				"author_name": payload.get("user_name"),
+				"author_email": payload.get("user_email"),
+				"author_avatar_url": _user_avatar(payload.get("user")),
+			},
+		)
+	)
+	_link_resolved_keys(tag_artifact, resolved, "release_ref")
+	return {"tag": tag_artifact}
+
+
+def release_payload_from_api(release: dict[str, Any]) -> dict[str, Any]:
+	"""Shape a GitLab REST release record for normalize_release_event."""
+	commit = release.get("commit") if isinstance(release.get("commit"), dict) else {}
+	links = release.get("_links") if isinstance(release.get("_links"), dict) else {}
+	return {
+		"id": release.get("tag_name"),
+		"name": release.get("name"),
+		"tag": release.get("tag_name"),
+		"tag_name": release.get("tag_name"),
+		"description": release.get("description"),
+		"url": links.get("self"),
+		"action": "create",
+		"commit": {
+			"id": commit.get("id"),
+			"message": commit.get("message"),
+			"title": commit.get("title"),
+			"author": {
+				"name": commit.get("author_name"),
+				"email": commit.get("author_email"),
+			},
+		},
+	}
+
+
+def normalize_release_event(instance: str, mapping: str | None, payload: dict[str, Any]) -> dict[str, Any]:
+	external_id = _release_external_id(payload)
+	if not external_id:
+		return {}
+
+	action = (payload.get("action") or "").strip().lower()
+	if action == "delete":
+		deleted_releases = mark_artifacts_deleted(
+			instance=instance,
+			mapping=mapping,
+			artifact_type="release",
+			external_id=external_id,
+			payload=payload,
+			project_id=project_id_from_payload(payload),
+			project_path=project_path_from_payload(payload),
+			identity_fields={
+				"artifact_name": payload.get("name") or external_id,
+				"ref_name": external_id,
+			},
+		)
+		return {"release": deleted_releases[0] if deleted_releases else None, "releases": deleted_releases}
+
+	commit = payload.get("commit") or {}
+	resolved = resolve_keys(*_release_link_texts(payload))
+	release_name = payload.get("name") or external_id
+	release_artifact = upsert_artifact(
+		build_artifact_payload(
+			instance=instance,
+			mapping=mapping,
+			artifact_type="release",
+			external_id=external_id,
+			data={
+				"external_iid": str(payload.get("id")) if payload.get("id") not in (None, "") else None,
+				"artifact_name": release_name,
+				"ref_name": external_id,
+				"artifact_status": "active",
+				"web_url": payload.get("url"),
+				"commit_sha": commit.get("id"),
+				"title": commit.get("title") or release_name,
+				"author_name": (commit.get("author") or {}).get("name") or payload.get("user_name"),
+				"author_email": (commit.get("author") or {}).get("email") or payload.get("user_email"),
+			},
+		)
+	)
+	_link_resolved_keys(release_artifact, resolved, "release_ref")
+	return {"release": release_artifact}

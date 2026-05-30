@@ -4,10 +4,16 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from dinext_git.api.gitlab_webhooks import _resolve_instance_name, _resolve_mapping, _resolve_workflow_events
-from dinext_git.services.gitlab.normalizer import is_branch_delete_push, normalize_push_event
+from dinext_git.services.gitlab.normalizer import (
+	is_branch_delete_push,
+	is_tag_delete_push,
+	normalize_push_event,
+	normalize_release_event,
+	normalize_tag_push_event,
+)
 from dinext_git.services.gitlab.projector import update_work_item_summary
 from dinext_git.services.gitlab.store import build_artifact_link_payload, build_artifact_payload, upsert_artifact, upsert_artifact_link
-from dinext_git.services.gitlab.utils import branch_name_from_ref
+from dinext_git.services.gitlab.utils import branch_name_from_ref, tag_name_from_ref
 from dinext_git.services.gitlab.workflow_sync import apply_rules
 from dinext_git.tests.test_utils import make_gitlab_instance, make_mapping, make_project, make_task
 
@@ -53,6 +59,126 @@ class TestGitLabWebhookIngest(FrappeTestCase):
 	def test_branch_name_from_ref_keeps_nested_branch_path(self):
 		self.assertEqual(branch_name_from_ref("refs/heads/feature/sample"), "feature/sample")
 		self.assertIsNone(branch_name_from_ref("refs/tags/v1.0"))
+
+	def test_tag_name_from_ref_parses_tag_path(self):
+		self.assertEqual(tag_name_from_ref("refs/tags/v1.0.0"), "v1.0.0")
+		self.assertIsNone(tag_name_from_ref("refs/heads/feature/sample"))
+
+	def test_tag_push_event_creates_tag_artifact_and_release_ref_link(self):
+		project = make_project()
+		task = make_task(project)
+		instance = make_gitlab_instance()
+		mapping = make_mapping(project, instance)
+
+		payload = {
+			"ref": f"refs/tags/release-{task}",
+			"after": "abc12345678901234567890123456789012345678",
+			"checkout_sha": "abc12345678901234567890123456789012345678",
+			"user_name": "Dev User",
+			"user_email": "dev@example.com",
+			"project": {"web_url": "https://gitlab.example.com/dinext/project"},
+			"commits": [{"message": f"{task} release tag"}],
+		}
+		result = normalize_tag_push_event(instance, mapping, payload)
+
+		self.assertTrue(result["tag"])
+		self.assertEqual(frappe.db.get_value("Development Artifact", result["tag"], "artifact_type"), "tag")
+		links = frappe.get_all(
+			"Development Artifact Link",
+			filters={"artifact": result["tag"]},
+			fields=["target_name", "link_source"],
+		)
+		self.assertTrue(any(row["target_name"] == task and row["link_source"] == "release_ref" for row in links))
+
+	def test_tag_delete_push_marks_tag_deleted(self):
+		project = make_project()
+		task = make_task(project)
+		instance = make_gitlab_instance()
+		mapping = make_mapping(project, instance)
+		tag_name = f"release-{task}"
+
+		artifact_name = upsert_artifact(
+			build_artifact_payload(
+				instance=instance,
+				mapping=mapping,
+				artifact_type="tag",
+				external_id=tag_name,
+				data={"artifact_name": tag_name, "ref_name": tag_name, "artifact_status": "active"},
+			)
+		)
+
+		delete_payload = {
+			"ref": f"refs/tags/{tag_name}",
+			"before": "abc12345678901234567890123456789012345678",
+			"after": "0" * 40,
+			"project": {"web_url": "https://gitlab.example.com/dinext/project"},
+			"commits": [],
+		}
+		self.assertTrue(is_tag_delete_push(delete_payload))
+		deleted = normalize_tag_push_event(instance, mapping, delete_payload)
+
+		self.assertEqual(deleted["tag"], artifact_name)
+		self.assertEqual(frappe.db.get_value("Development Artifact", artifact_name, "artifact_status"), "deleted")
+
+	def test_release_hook_creates_release_artifact(self):
+		project = make_project()
+		task = make_task(project)
+		instance = make_gitlab_instance()
+		mapping = make_mapping(project, instance)
+		tag_name = f"v1-{task}"
+
+		payload = {
+			"id": 42,
+			"name": f"Release {task}",
+			"tag": tag_name,
+			"description": f"Includes {task}",
+			"url": f"https://gitlab.example.com/-/releases/{tag_name}",
+			"action": "create",
+			"commit": {
+				"id": "abc123",
+				"title": f"Release {task}",
+				"message": f"{task} shipped",
+			},
+			"project": {"id": 1, "path_with_namespace": frappe.db.get_value("GitLab Project Mapping", mapping, "gitlab_project_path")},
+		}
+		result = normalize_release_event(instance, mapping, payload)
+
+		self.assertTrue(result["release"])
+		self.assertEqual(frappe.db.get_value("Development Artifact", result["release"], "artifact_type"), "release")
+		links = frappe.get_all(
+			"Development Artifact Link",
+			filters={"artifact": result["release"]},
+			fields=["target_name", "link_source"],
+		)
+		self.assertTrue(any(row["target_name"] == task and row["link_source"] == "release_ref" for row in links))
+
+	def test_release_delete_marks_release_deleted(self):
+		project = make_project()
+		instance = make_gitlab_instance()
+		mapping = make_mapping(project, instance)
+		tag_name = "v9.9.9"
+
+		artifact_name = upsert_artifact(
+			build_artifact_payload(
+				instance=instance,
+				mapping=mapping,
+				artifact_type="release",
+				external_id=tag_name,
+				data={"artifact_name": tag_name, "ref_name": tag_name, "artifact_status": "active"},
+			)
+		)
+
+		payload = {
+			"id": 99,
+			"name": tag_name,
+			"tag": tag_name,
+			"action": "delete",
+			"project": {"id": 1},
+		}
+		deleted = normalize_release_event(instance, mapping, payload)
+
+		self.assertEqual(deleted["release"], artifact_name)
+		self.assertEqual(frappe.db.get_value("Development Artifact", artifact_name, "artifact_status"), "deleted")
 
 	def test_delete_push_marks_branch_created_from_dinext_ui(self):
 		project = make_project()
