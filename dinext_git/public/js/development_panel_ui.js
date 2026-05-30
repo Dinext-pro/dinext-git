@@ -13,6 +13,19 @@ dinext_git.development_panel.get_development_status_color = function (statusCode
 	return dinext_git.development_panel.DEVELOPMENT_STATUS_COLORS[statusCode] || "gray";
 };
 
+dinext_git.development_panel.format_mapping_select_label = function (row) {
+	const path = row.gitlab_project_path || row.name;
+	const host = row.gitlab_instance_host || row.gitlab_instance;
+	return host ? `${path} @ ${host}` : path;
+};
+
+dinext_git.development_panel.build_mapping_select_options = function (options) {
+	return (options || []).map((row) => ({
+		value: row.name,
+		label: dinext_git.development_panel.format_mapping_select_label(row),
+	}));
+};
+
 dinext_git.development_panel.render_status_pill = function (summary) {
 	const statusCode = summary.development_status || "not_started";
 	const label = frappe.utils.escape_html(summary.development_status_label || __("Not started"));
