@@ -272,3 +272,23 @@ class TestDevStatusProjection(FrappeTestCase):
 		self.assertEqual(summary["artifact_count"], 0)
 		self.assertEqual(summary["development_status"], "not_started")
 		self.assertEqual(frappe.db.get_value("Development Artifact", branch, "artifact_status"), "deleted")
+
+	def test_summary_flags_release_without_merge_for_tag_artifact(self):
+		project = make_project()
+		task = make_task(project)
+		instance = make_gitlab_instance()
+		mapping = make_mapping(project, instance)
+
+		self._add_linked_artifact(
+			instance=instance,
+			mapping=mapping,
+			task=task,
+			artifact_type="tag",
+			external_id=f"release-{task}",
+			artifact_status="active",
+			artifact_name=f"release-{task}",
+			link_source="release_ref",
+		)
+
+		summary = collect_work_item_summary("Task", task)
+		self.assertIn("release_without_merge", summary["discrepancy_flags"])

@@ -12,6 +12,8 @@ from dinext_git.services.gitlab.normalizer import (
 	normalize_merge_request_event,
 	normalize_pipeline_event,
 	normalize_push_event,
+	normalize_release_event,
+	normalize_tag_push_event,
 )
 from dinext_git.services.gitlab.utils import is_branch_ref, project_id_from_payload, project_path_from_payload
 from dinext_git.services.gitlab.payloads import flatten_artifact_names, read_webhook_payload
@@ -133,6 +135,10 @@ def receive():
 		normalized = normalize_merge_request_event(instance_name, mapping["name"] if mapping else None, payload)
 	elif event_type == "Pipeline Hook":
 		normalized = normalize_pipeline_event(instance_name, mapping["name"] if mapping else None, payload)
+	elif event_type == "Tag Push Hook":
+		normalized = normalize_tag_push_event(instance_name, mapping["name"] if mapping else None, payload)
+	elif event_type == "Release Hook":
+		normalized = normalize_release_event(instance_name, mapping["name"] if mapping else None, payload)
 
 	artifact_names = flatten_artifact_names(normalized)
 	workflow_events = _resolve_workflow_events(event_type, payload)

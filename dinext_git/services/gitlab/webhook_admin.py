@@ -12,6 +12,8 @@ from dinext_git.services.gitlab.store import get_instance, get_mapping
 
 WEBHOOK_RECEIVE_PATH = "/api/method/dinext_git.api.gitlab_webhooks.receive"
 
+WEBHOOK_PROBLEM_STATUSES = frozenset({"missing", "drifted", "failed"})
+
 
 def normalize_public_webhook_url(url: str) -> str:
 	"""Prefer HTTPS for public callback URLs so GitLab does not depend on HTTP redirects."""
@@ -37,6 +39,8 @@ def desired_hook_payload(mapping: dict[str, Any], instance: dict[str, Any]) -> d
 		"push_events": True,
 		"merge_requests_events": True,
 		"pipeline_events": True,
+		"tag_push_events": True,
+		"releases_events": True,
 		"enable_ssl_verification": bool(instance.get("verify_ssl", 1)),
 	}
 
@@ -93,7 +97,13 @@ def verify_mapping_webhook(mapping_name: str) -> dict[str, Any]:
 	drifted = False
 	if hook.get("url") != desired["url"]:
 		drifted = True
-	if not hook.get("push_events") or not hook.get("merge_requests_events") or not hook.get("pipeline_events"):
+	if (
+		not hook.get("push_events")
+		or not hook.get("merge_requests_events")
+		or not hook.get("pipeline_events")
+		or not hook.get("tag_push_events")
+		or not hook.get("releases_events")
+	):
 		drifted = True
 
 	status = "drifted" if drifted else "active"
@@ -106,3 +116,64 @@ def verify_mapping_webhook(mapping_name: str) -> dict[str, Any]:
 		},
 	)
 	return {"status": status, "hook": hook, "desired": desired}
+
+
+def get_enabled_mappings_for_instance(instance_name: str) -> list[dict[str, Any]]:
+	return frappe.get_all(
+		"GitLab Project Mapping",
+		filters={"gitlab_instance": instance_name, "enabled": 1},
+		fields=["name", "gitlab_project_path", "webhook_status"],
+		order_by="name asc",
+	)
+
+
+def verify_and_sync_instance_webhooks(instance_name: str) -> dict[str, Any]:
+	"""Verify all enabled mappings for an instance and sync only problematic webhooks."""
+	if not frappe.db.exists("GitLab Instance", instance_name):
+		frappe.throw(_("GitLab Instance {0} was not found.").format(instance_name))
+
+	mappings = get_enabled_mappings_for_instance(instance_name)
+	results: list[dict[str, Any]] = []
+	synced_count = 0
+	active_count = 0
+	still_problematic_count = 0
+	error_count = 0
+
+	for row in mappings:
+		mapping_name = row["name"]
+		entry: dict[str, Any] = {
+			"mapping": mapping_name,
+			"gitlab_project_path": row.get("gitlab_project_path"),
+		}
+		try:
+			verify_result = verify_mapping_webhook(mapping_name)
+			status = verify_result.get("status")
+			entry["status"] = status
+
+			if status in WEBHOOK_PROBLEM_STATUSES:
+				sync_mapping_webhook(mapping_name)
+				entry["synced"] = True
+				synced_count += 1
+				verify_result = verify_mapping_webhook(mapping_name)
+				status = verify_result.get("status")
+				entry["status"] = status
+
+			if status == "active":
+				active_count += 1
+			elif status in WEBHOOK_PROBLEM_STATUSES:
+				still_problematic_count += 1
+		except Exception as exc:
+			entry["error"] = str(exc)
+			error_count += 1
+
+		results.append(entry)
+
+	return {
+		"instance": instance_name,
+		"checked_count": len(mappings),
+		"synced_count": synced_count,
+		"active_count": active_count,
+		"still_problematic_count": still_problematic_count,
+		"error_count": error_count,
+		"results": results,
+	}

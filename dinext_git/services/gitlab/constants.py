@@ -35,7 +35,11 @@ WEBHOOK_EVENTS = (
 	"push",
 	"merge_request",
 	"pipeline",
+	"tag_push",
+	"release",
 )
+
+RELEASE_SIDE_ARTIFACT_TYPES = frozenset({"release", "tag", "deployment"})
 
 WORK_ITEM_DOCTYPES = (
 	"Task",

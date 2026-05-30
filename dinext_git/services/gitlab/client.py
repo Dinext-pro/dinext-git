@@ -131,5 +131,8 @@ class GitLabClient:
 	def get_pipeline_jobs(self, project_id: str | int, pipeline_id: str | int):
 		return self.request("GET", f"projects/{project_id}/pipelines/{pipeline_id}/jobs")
 
-	def list_releases(self, project_id: str | int):
-		return self.request("GET", f"projects/{project_id}/releases", params={"per_page": 100})
+	def list_releases(self, project_id: str | int, *, updated_after: str | None = None):
+		params: dict[str, str | int] = {"per_page": 100, "order_by": "released_at", "sort": "desc"}
+		if updated_after:
+			params["updated_after"] = updated_after
+		return self.request("GET", f"projects/{project_id}/releases", params=params)

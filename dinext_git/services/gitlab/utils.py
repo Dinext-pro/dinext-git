@@ -12,6 +12,7 @@ from frappe import _
 
 
 REF_HEADS_PREFIX = "refs/heads/"
+REF_TAGS_PREFIX = "refs/tags/"
 
 
 def branch_name_from_ref(ref: str | None) -> str | None:
@@ -25,6 +26,19 @@ def branch_name_from_ref(ref: str | None) -> str | None:
 
 def is_branch_ref(ref: str | None) -> bool:
 	return branch_name_from_ref(ref) is not None
+
+
+def tag_name_from_ref(ref: str | None) -> str | None:
+	"""Return the Git tag name from a tag push hook ref, or None for non-tag refs."""
+	ref = (ref or "").strip()
+	if not ref.startswith(REF_TAGS_PREFIX):
+		return None
+	name = ref[len(REF_TAGS_PREFIX) :].strip()
+	return name or None
+
+
+def is_tag_ref(ref: str | None) -> bool:
+	return tag_name_from_ref(ref) is not None
 
 
 def slugify_fragment(value: str, *, max_length: int = 48) -> str:

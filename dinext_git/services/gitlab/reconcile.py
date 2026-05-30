@@ -11,6 +11,8 @@ from dinext_git.services.gitlab.normalizer import (
 	log_event,
 	normalize_merge_request_event,
 	normalize_pipeline_event,
+	normalize_release_event,
+	release_payload_from_api,
 )
 from dinext_git.services.gitlab.payloads import flatten_artifact_names
 from dinext_git.services.gitlab.projector import update_work_item_summary
@@ -116,7 +118,7 @@ def reconcile_mapping(mapping_name: str) -> dict[str, Any]:
 	client = GitLabClient(mapping["gitlab_instance"])
 	project_id = mapping["gitlab_project_id"] or client.get_project(project_path=mapping["gitlab_project_path"])["id"]
 
-	results: dict[str, Any] = {"merge_requests": 0, "pipelines": 0, "branches_deleted": 0}
+	results: dict[str, Any] = {"merge_requests": 0, "pipelines": 0, "releases": 0, "branches_deleted": 0}
 	touched_artifact_names: set[str] = set()
 
 	_touch_cursor(mapping_name, "merge_request", status="running")
@@ -189,6 +191,32 @@ def reconcile_mapping(mapping_name: str) -> dict[str, Any]:
 		_touch_cursor(mapping_name, "pipeline", status="idle")
 	except Exception as exc:
 		_touch_cursor(mapping_name, "pipeline", status="failed", error=str(exc))
+		raise
+
+	_touch_cursor(mapping_name, "release", status="running")
+	try:
+		for release in client.list_releases(project_id, updated_after=mapping.get("last_reconciled_release_at")):
+			payload = release_payload_from_api(release)
+			log_event(
+				instance=mapping["gitlab_instance"],
+				mapping=mapping_name,
+				event_type="reconcile_release",
+				delivery_id=str(release.get("tag_name") or release.get("name")),
+				payload=payload,
+				status="processed",
+			)
+			normalized = normalize_release_event(mapping["gitlab_instance"], mapping_name, payload)
+			touched_artifact_names.update(flatten_artifact_names(normalized))
+			results["releases"] += 1
+		frappe.db.set_value(
+			"GitLab Project Mapping",
+			mapping_name,
+			"last_reconciled_release_at",
+			frappe.utils.now_datetime(),
+		)
+		_touch_cursor(mapping_name, "release", status="idle")
+	except Exception as exc:
+		_touch_cursor(mapping_name, "release", status="failed", error=str(exc))
 		raise
 
 	deleted_branch_artifacts = _reconcile_deleted_branches(mapping, client, project_id)

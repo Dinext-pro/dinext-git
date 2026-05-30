@@ -7,7 +7,7 @@ from collections import defaultdict
 import frappe
 from frappe import _
 
-from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
+from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS, RELEASE_SIDE_ARTIFACT_TYPES
 
 
 EXCEPTION_MODES = {
@@ -68,13 +68,16 @@ def run(mode: str, filters: dict | None = None) -> list[dict]:
 				rows.append(artifact)
 	elif mode == "tasks_in_release_without_merge":
 		for target, target_links in links_by_target.items():
-			has_release = any(artifact_map.get(link["artifact"], {}).get("artifact_type") == "release" for link in target_links)
+			has_release_side = any(
+				artifact_map.get(link["artifact"], {}).get("artifact_type") in RELEASE_SIDE_ARTIFACT_TYPES
+				for link in target_links
+			)
 			has_merged_mr = any(
 				artifact_map.get(link["artifact"], {}).get("artifact_type") == "merge_request"
 				and artifact_map.get(link["artifact"], {}).get("artifact_status") == "merged"
 				for link in target_links
 			)
-			if has_release and not has_merged_mr:
+			if has_release_side and not has_merged_mr:
 				rows.append({"target_doctype": target[0], "target_name": target[1]})
 
 	return rows
