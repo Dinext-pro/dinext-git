@@ -12,6 +12,7 @@ from dinext_git.services.gitlab.branch_actions import (
 	preview_branch,
 )
 from dinext_git.services.gitlab.utils import slugify_fragment
+from dinext_git.services.gitlab.constants import DEVELOPMENT_STATUS_IN_PROGRESS
 from dinext_git.tests.test_utils import make_gitlab_instance, make_mapping, make_project, make_task
 
 
@@ -104,7 +105,10 @@ class TestBranchActions(FrappeTestCase):
 		result = create_branch("Task", task)
 
 		self.assertTrue(result["artifact"])
-		self.assertEqual(frappe.db.get_value("Task", task, "custom_git_development_status"), "in_progress")
+		self.assertEqual(
+			frappe.db.get_value("Task", task, "custom_git_development_status"),
+			DEVELOPMENT_STATUS_IN_PROGRESS,
+		)
 		self.assertEqual(frappe.db.get_value("Task", task, "status"), "Working")
 		client_cls.assert_called_once_with(instance, api_token="user-token")
 		client.create_branch.assert_called_once()

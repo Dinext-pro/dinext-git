@@ -8,7 +8,16 @@ from urllib.parse import urlencode
 
 import frappe
 
-from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS, RELEASE_SIDE_ARTIFACT_TYPES
+from dinext_git.services.gitlab.constants import (
+	DELETED_ARTIFACT_STATUS,
+	DEVELOPMENT_STATUS_DECLINED,
+	DEVELOPMENT_STATUS_DEPLOYED,
+	DEVELOPMENT_STATUS_IN_PROGRESS,
+	DEVELOPMENT_STATUS_MERGED,
+	DEVELOPMENT_STATUS_NOT_STARTED,
+	DEVELOPMENT_STATUS_PIPELINE_FAILED,
+	RELEASE_SIDE_ARTIFACT_TYPES,
+)
 from dinext_git.services.gitlab.store import get_instance, get_mapping
 
 OPEN_MERGE_REQUEST_STATES = {"open", "opened", "reopen", "reopened"}
@@ -24,7 +33,7 @@ def _empty_summary() -> dict[str, Any]:
 		"last_pipeline_status": None,
 		"last_deployment_status": None,
 		"discrepancy_flags": [],
-		"development_status": "not_started",
+		"development_status": DEVELOPMENT_STATUS_NOT_STARTED,
 		"status_merge_request_count": 0,
 		"status_merge_request_state": None,
 		"status_merge_request_url": None,
@@ -43,11 +52,15 @@ def _get_merge_request_state_family(status: str | None) -> str | None:
 
 
 def _get_status_merge_request_state(development_status: str) -> str | None:
-	if development_status == "in_progress":
+	if development_status == DEVELOPMENT_STATUS_IN_PROGRESS:
 		return "opened"
-	if development_status in {"merged", "pipeline_failed", "deployed"}:
+	if development_status in {
+		DEVELOPMENT_STATUS_MERGED,
+		DEVELOPMENT_STATUS_PIPELINE_FAILED,
+		DEVELOPMENT_STATUS_DEPLOYED,
+	}:
 		return "merged"
-	if development_status == "declined":
+	if development_status == DEVELOPMENT_STATUS_DECLINED:
 		return "closed"
 	return None
 
@@ -124,17 +137,17 @@ def collect_work_item_summary(target_doctype: str, target_name: str) -> dict[str
 	):
 		flags.append("release_without_merge")
 
-	development_status = "not_started"
+	development_status = DEVELOPMENT_STATUS_NOT_STARTED
 	if type_counter.get("branch", 0) or open_merge_requests:
-		development_status = "in_progress"
+		development_status = DEVELOPMENT_STATUS_IN_PROGRESS
 	if merged_merge_requests:
-		development_status = "merged"
+		development_status = DEVELOPMENT_STATUS_MERGED
 	if closed_merge_requests and not open_merge_requests and not merged_merge_requests:
-		development_status = "declined"
+		development_status = DEVELOPMENT_STATUS_DECLINED
 	if last_pipeline and last_pipeline.get("artifact_status") == "failed":
-		development_status = "pipeline_failed"
+		development_status = DEVELOPMENT_STATUS_PIPELINE_FAILED
 	if last_deployment and last_deployment.get("artifact_status") == "success":
-		development_status = "deployed"
+		development_status = DEVELOPMENT_STATUS_DEPLOYED
 	status_merge_request_state = _get_status_merge_request_state(development_status)
 	status_merge_requests = [
 		artifact

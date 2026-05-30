@@ -5,3 +5,4 @@
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
 dinext_git.patches.v0_0.migrate_legacy_jira_aliases
+dinext_git.patches.v0_0.migrate_development_status_select_values

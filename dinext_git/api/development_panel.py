@@ -7,7 +7,11 @@ from urllib.parse import quote, urlparse
 import frappe
 from frappe import _
 
-from dinext_git.services.gitlab.constants import DELETED_ARTIFACT_STATUS
+from dinext_git.services.gitlab.constants import (
+	DELETED_ARTIFACT_STATUS,
+	DEVELOPMENT_STATUS_NOT_STARTED,
+	DEVELOPMENT_STATUS_VALUES,
+)
 from dinext_git.services.gitlab.branch_actions import DEFAULT_BRANCH_TEMPLATE, get_branch_dialog_options, preview_branch
 from dinext_git.services.gitlab.panel_metadata import (
 	build_summary_timestamps,
@@ -16,15 +20,6 @@ from dinext_git.services.gitlab.panel_metadata import (
 )
 from dinext_git.services.gitlab.projector import collect_work_item_summary
 from dinext_git.services.gitlab.store import get_default_mapping_for_project, get_instance, get_mappings_for_project
-
-DEVELOPMENT_STATUS_LABELS = {
-	"not_started": _("Not started"),
-	"in_progress": _("In progress"),
-	"merged": _("Merged"),
-	"declined": _("Declined"),
-	"pipeline_failed": _("Pipeline failed"),
-	"deployed": _("Deployed"),
-}
 
 DISCREPANCY_FLAG_LABELS = {
 	"no_merge_request": _("No merge request"),
@@ -39,12 +34,16 @@ MERGE_REQUEST_STATE_LABELS = {
 }
 
 
+def _development_status_label(status: str | None) -> str:
+	if status in DEVELOPMENT_STATUS_VALUES:
+		return _(status)
+	return _(status or DEVELOPMENT_STATUS_NOT_STARTED)
+
+
 def _decorate_summary(summary: dict) -> dict:
 	decorated = dict(summary)
 	status_code = decorated.get("development_status")
-	decorated["development_status_label"] = DEVELOPMENT_STATUS_LABELS.get(
-		status_code, frappe.unscrub(status_code or "not_started")
-	)
+	decorated["development_status_label"] = _development_status_label(status_code)
 	state_code = decorated.get("status_merge_request_state")
 	decorated["status_merge_request_label"] = MERGE_REQUEST_STATE_LABELS.get(
 		state_code, frappe.unscrub(state_code or "merge_requests")

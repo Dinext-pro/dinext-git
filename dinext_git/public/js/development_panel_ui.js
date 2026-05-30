@@ -1,12 +1,12 @@
 frappe.provide("dinext_git.development_panel");
 
 dinext_git.development_panel.DEVELOPMENT_STATUS_COLORS = {
-	not_started: "gray",
-	in_progress: "orange",
-	merged: "green",
-	declined: "red",
-	pipeline_failed: "red",
-	deployed: "cyan",
+	"Not started": "gray",
+	"In progress": "orange",
+	"Merged": "green",
+	"Declined": "red",
+	"Pipeline failed": "red",
+	"Deployed": "cyan",
 };
 
 dinext_git.development_panel.get_development_status_color = function (statusCode) {
@@ -27,7 +27,7 @@ dinext_git.development_panel.build_mapping_select_options = function (options) {
 };
 
 dinext_git.development_panel.render_status_pill = function (summary) {
-	const statusCode = summary.development_status || "not_started";
+	const statusCode = summary.development_status || "Not started";
 	const label = frappe.utils.escape_html(summary.development_status_label || __("Not started"));
 	const color = dinext_git.development_panel.get_development_status_color(statusCode);
 	return `<span class="indicator-pill ${color} no-indicator-dot">${label}</span>`;

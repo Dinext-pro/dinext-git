@@ -3,6 +3,13 @@ from __future__ import annotations
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from dinext_git.services.gitlab.constants import (
+	DEVELOPMENT_STATUS_DECLINED,
+	DEVELOPMENT_STATUS_DEPLOYED,
+	DEVELOPMENT_STATUS_IN_PROGRESS,
+	DEVELOPMENT_STATUS_NOT_STARTED,
+	DEVELOPMENT_STATUS_PIPELINE_FAILED,
+)
 from dinext_git.services.gitlab.projector import collect_work_item_summary
 from dinext_git.services.gitlab.store import (
 	build_artifact_link_payload,
@@ -82,7 +89,7 @@ class TestDevStatusProjection(FrappeTestCase):
 
 		summary = collect_work_item_summary("Task", task)
 		self.assertEqual(summary["artifact_count"], 2)
-		self.assertEqual(summary["development_status"], "pipeline_failed")
+		self.assertEqual(summary["development_status"], DEVELOPMENT_STATUS_PIPELINE_FAILED)
 		self.assertIn("pipeline_failed", summary["discrepancy_flags"])
 
 	def test_summary_marks_declined_when_only_closed_like_merge_requests_exist(self):
@@ -116,7 +123,7 @@ class TestDevStatusProjection(FrappeTestCase):
 
 		summary = collect_work_item_summary("Task", task)
 
-		self.assertEqual(summary["development_status"], "declined")
+		self.assertEqual(summary["development_status"], DEVELOPMENT_STATUS_DECLINED)
 		self.assertEqual(summary["status_merge_request_count"], 2)
 		self.assertEqual(summary["status_merge_request_state"], "closed")
 		self.assertEqual(
@@ -155,7 +162,7 @@ class TestDevStatusProjection(FrappeTestCase):
 
 		summary = collect_work_item_summary("Task", task)
 
-		self.assertEqual(summary["development_status"], "in_progress")
+		self.assertEqual(summary["development_status"], DEVELOPMENT_STATUS_IN_PROGRESS)
 		self.assertEqual(summary["status_merge_request_count"], 1)
 		self.assertEqual(summary["status_merge_request_state"], "opened")
 		self.assertEqual(
@@ -195,7 +202,7 @@ class TestDevStatusProjection(FrappeTestCase):
 
 		summary = collect_work_item_summary("Task", task)
 
-		self.assertEqual(summary["development_status"], "pipeline_failed")
+		self.assertEqual(summary["development_status"], DEVELOPMENT_STATUS_PIPELINE_FAILED)
 		self.assertEqual(summary["status_merge_request_count"], 1)
 		self.assertEqual(summary["status_merge_request_state"], "merged")
 		self.assertEqual(
@@ -233,7 +240,7 @@ class TestDevStatusProjection(FrappeTestCase):
 
 		summary = collect_work_item_summary("Task", task)
 
-		self.assertEqual(summary["development_status"], "deployed")
+		self.assertEqual(summary["development_status"], DEVELOPMENT_STATUS_DEPLOYED)
 		self.assertEqual(summary["status_merge_request_count"], 1)
 		self.assertEqual(summary["status_merge_request_state"], "merged")
 
@@ -270,7 +277,7 @@ class TestDevStatusProjection(FrappeTestCase):
 
 		summary = collect_work_item_summary("Task", task)
 		self.assertEqual(summary["artifact_count"], 0)
-		self.assertEqual(summary["development_status"], "not_started")
+		self.assertEqual(summary["development_status"], DEVELOPMENT_STATUS_NOT_STARTED)
 		self.assertEqual(frappe.db.get_value("Development Artifact", branch, "artifact_status"), "deleted")
 
 	def test_summary_flags_release_without_merge_for_tag_artifact(self):
