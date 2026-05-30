@@ -279,8 +279,6 @@ async function render_dinext_git_panel(frm) {
 		showButton: Boolean(payload.can_create_branch),
 	});
 	const summary = payload.summary || {};
-	const preview = payload.branch_preview || null;
-	const showBranchMappingDetails = Boolean(payload.show_branch_mapping_details);
 	const sections = Object.values(payload.grouped_artifacts || {})
 		.map((group) => {
 			const typeSections = Object.entries(group.artifacts_by_type || {})
@@ -316,17 +314,6 @@ async function render_dinext_git_panel(frm) {
 			: ` <span class="text-muted" title="${statusCountTitle}">(${statusCount})</span>`
 		: "";
 	const body = sections || `<p class="text-muted">${payload.empty_state_message || __("No development activity yet.")}</p>`;
-	const previewBlock = preview
-		? `<div class="mb-3 text-muted">
-			<div><strong>${__("Branch preview")}:</strong> <code>${preview.branch_name}</code></div>
-			${
-				showBranchMappingDetails
-					? `<div><strong>${__("GitLab project")}:</strong> ${preview.mapping?.gitlab_project_path || "-"}</div>`
-					: ""
-			}
-			<div><strong>${__("Base branch")}:</strong> <code>${preview.base_branch}</code></div>
-		</div>`
-		: "";
 
 	panel.$wrapper.html(
 		`<div class="dinext-git-development">
@@ -334,7 +321,6 @@ async function render_dinext_git_panel(frm) {
 				<strong>${__("Development status")}:</strong> ${summary.development_status_label || __("Not started")}${statusCountMarkup}
 				${flags ? `<div class="mt-2">${flags}</div>` : ""}
 			</div>
-			${previewBlock}
 			${body}
 		</div>`
 	);
