@@ -133,8 +133,7 @@ dinext_git.development_panel.render_type_section = function (artifactType, rows,
 
 	return `<div class="dinext-git-type-section">
 		<div class="dinext-git-type-header">
-			<span class="dinext-git-type-label">${frappe.utils.escape_html(label)}</span>
-			<span class="dinext-git-type-count text-muted">${count}</span>
+			<span class="dinext-git-type-label">${frappe.utils.escape_html(label)} (${count})</span>
 		</div>
 		<ul class="dinext-git-artifact-list list-unstyled mb-0">${items}</ul>
 	</div>`;
@@ -162,7 +161,7 @@ dinext_git.development_panel.render_project_section = function (group, { strongL
 		.join("");
 
 	const defaultBadge = group.is_default
-		? `<span class="indicator-pill gray no-indicator-dot dinext-git-default-badge">${__("Default")}</span>`
+		? `<span class="indicator-pill gray no-indicator-dot dinext-git-default-badge">${__("★")}</span>`
 		: "";
 
 	return `<section class="dinext-git-project-section">
