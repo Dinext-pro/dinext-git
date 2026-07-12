@@ -13,6 +13,7 @@ async function get_branch_options(frm, mappingName) {
 			name: frm.doc.name,
 			mapping_name: mappingName,
 		},
+		silent: true,
 	});
 	return response.message || {};
 }
@@ -27,6 +28,7 @@ async function get_branch_preview(frm, { mappingName, branchTemplate, baseBranch
 			branch_template: branchTemplate,
 			base_branch: baseBranch,
 		},
+		silent: true,
 	});
 	return response.message || {};
 }
@@ -122,6 +124,7 @@ async function open_create_branch_dialog(frm, payload) {
 					branch_template: values.branch_template,
 					base_branch: values.base_branch,
 				},
+				silent: true,
 			});
 			dialog.hide();
 			await frm.reload_doc();
@@ -258,40 +261,57 @@ async function trigger_create_branch(frm) {
 	await open_create_branch_dialog(frm, payload);
 }
 
-frappe.ui.form.on("Issue", {
-	async refresh(frm) {
-		frm.__dinext_git_payload = null;
+async function render_dinext_git_panel(frm) {
+	frm.__dinext_git_payload = null;
 
-		if (frm.is_new()) {
-			set_gitlab_visibility(frm, { showTab: false, showButton: false });
-			return;
-		}
+	if (frm.is_new()) {
+		set_gitlab_visibility(frm, { showTab: false, showButton: false });
+		return;
+	}
 
-		const response = await frappe.call({
-			method: "dinext_git.api.development_panel.get_panel",
-			args: { doctype: frm.doctype, name: frm.doc.name },
-		});
-		const payload = response.message || {};
+	let payload;
+	try {
+		await frappe.require(["/assets/dinext_git/js/development_panel_ui.js"]);
+		payload = await dinext_git.development_panel.load_panel(frm.doctype, frm.doc.name);
+	} catch (error) {
+		set_gitlab_visibility(frm, { showTab: false, showButton: false });
 		const panel = frm.get_field("custom_gitlab_panel");
-		if (!payload.show_gitlab_tab || !panel) {
-			set_gitlab_visibility(frm, { showTab: false, showButton: false });
-			if (panel?.$wrapper) {
-				panel.$wrapper.empty();
-			}
-			return;
+		if (panel?.$wrapper) {
+			panel.$wrapper.empty();
 		}
+		dinext_git.development_panel.show_gitlab_warning(
+			error?.message || __("Unable to load GitLab development panel.")
+		);
+		return;
+	}
 
-		frm.__dinext_git_payload = payload;
-		set_gitlab_visibility(frm, {
-			showTab: true,
-			showButton: Boolean(payload.can_create_branch),
-		});
+	const panel = frm.get_field("custom_gitlab_panel");
+	if (!payload.show_gitlab_tab || !panel) {
+		set_gitlab_visibility(frm, { showTab: false, showButton: false });
+		if (panel?.$wrapper) {
+			panel.$wrapper.empty();
+		}
+		return;
+	}
 
-		frappe.require(["/assets/dinext_git/js/development_panel_ui.js"], () => {
-			dinext_git.development_panel.ensure_assets(() => {
-				panel.$wrapper.html(dinext_git.development_panel.render_panel_html(payload));
-			});
-		});
+	frm.__dinext_git_payload = payload;
+	set_gitlab_visibility(frm, {
+		showTab: true,
+		showButton: Boolean(payload.can_create_branch),
+	});
+
+	if (payload.branch_error) {
+		dinext_git.development_panel.show_gitlab_warning(payload.branch_error);
+	}
+
+	dinext_git.development_panel.ensure_assets(() => {
+		panel.$wrapper.html(dinext_git.development_panel.render_panel_html(payload));
+	});
+}
+
+frappe.ui.form.on("Issue", {
+	refresh(frm) {
+		render_dinext_git_panel(frm);
 	},
 	custom_gitlab_create_branch(frm) {
 		return trigger_create_branch(frm);

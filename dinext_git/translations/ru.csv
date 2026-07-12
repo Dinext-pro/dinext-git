@@ -20,6 +20,7 @@
 "Loading branch preview...","Загрузка предпросмотра ветки...",""
 "Loading branch options...","Загрузка параметров ветки...",""
 "Unable to build branch preview.","Не удалось построить предпросмотр ветки.",""
+"Unable to load GitLab development panel.","Не удалось загрузить панель разработки GitLab.",""
 "Unable to load branch options.","Не удалось загрузить параметры ветки.",""
 "No development activity yet.","Активность разработки пока отсутствует.",""
 "No GitLab development activity has been linked yet.","GitLab-активность разработки пока не привязана.",""
