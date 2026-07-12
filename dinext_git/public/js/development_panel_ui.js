@@ -1,5 +1,21 @@
 frappe.provide("dinext_git.development_panel");
 
+dinext_git.development_panel.show_gitlab_warning = function (message) {
+	if (!message) {
+		return;
+	}
+	frappe.show_alert({ message, indicator: "yellow" }, 8);
+};
+
+dinext_git.development_panel.load_panel = async function (doctype, name) {
+	const response = await frappe.call({
+		method: "dinext_git.api.development_panel.get_panel",
+		args: { doctype, name },
+		silent: true,
+	});
+	return response.message || {};
+};
+
 dinext_git.development_panel.DEVELOPMENT_STATUS_COLORS = {
 	"Not started": "gray",
 	"In progress": "orange",

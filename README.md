@@ -48,7 +48,7 @@
 
 ```bash
 cd /path/to/frappe-bench
-bench get-app administrator@dinext.invalid:dinext/dinext/dinext-git.git --branch develop
+bench get-app https://dinext.gitlab.yandexcloud.net/erpnext/dinext/dinext-git.git --branch develop
 bench --site your-site.local install-app dinext_git
 bench --site your-site.local migrate
 bench --site your-site.local export-fixtures --app dinext_git
@@ -207,7 +207,7 @@ UI-логика в [`task_development.js`](dinext_git/public/js/task_development
 
 Сервер дополнительно проверяет, что итоговое имя ветки содержит Dinext key, является корректным git ref и не конфликтует с уже существующей branch в GitLab или среди активных artifacts.
 
-Если GitLab API недоступен или у пользователя нет **GitLab Branch Token**, `can_create_branch` становится `false`, а в payload попадает `branch_error`; диалог показывает понятное сообщение об ошибке вместо preview.
+Если GitLab API недоступен или у пользователя нет **GitLab Branch Token**, `can_create_branch` становится `false`, а в payload попадает `branch_error`. При открытии формы UI показывает это предупреждение жёлтым `frappe.show_alert`, а не модальным окном; кнопка **Create Branch** скрывается. В диалоге **Create Branch** та же ошибка отображается inline вместо preview.
 
 ### Синхронизация удалений (soft-delete)
 

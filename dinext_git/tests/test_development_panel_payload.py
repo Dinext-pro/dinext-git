@@ -124,6 +124,28 @@ class TestDevelopmentPanelPayload(FrappeTestCase):
 		)
 		self._assert_branch_mapping_option_metadata(payload["branch_mapping_options"], instance)
 
+	def test_panel_surfaces_branch_error_without_message_log_leak(self):
+		project = make_project()
+		task = make_task(project)
+		instance = make_gitlab_instance()
+		make_mapping(project, instance)
+
+		auth_message = (
+			"GitLab authorization failed. Check that your token is present, valid, "
+			"and has access to the selected repository."
+		)
+
+		def raise_auth_error(*args, **kwargs):
+			frappe.throw(auth_message)
+
+		self.list_branches_mock.side_effect = raise_auth_error
+		payload = get_panel("Task", task)
+
+		self.assertTrue(payload["show_gitlab_tab"])
+		self.assertFalse(payload["can_create_branch"])
+		self.assertIn("GitLab authorization failed", payload["branch_error"])
+		self.assertEqual(frappe.get_message_log(), [])
+
 	def test_panel_exposes_declined_label_and_merge_request_link_metadata(self):
 		project = make_project()
 		task = make_task(project)

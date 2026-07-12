@@ -100,7 +100,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-05-31 02:39:26.086809",
+ "modified": "2026-06-01 12:36:24.140608",
  "modified_by": "Administrator",
  "module": "Dinext Git",
  "name": "\u0420\u0430\u0437\u0440\u0430\u0431\u043e\u0442\u043a\u0438",
@@ -164,6 +164,9 @@
   },
   {
    "role": "System Manager"
+  },
+  {
+   "role": "Dinext_Project_Manager"
   }
  ],
  "sequence_id": 41.0,

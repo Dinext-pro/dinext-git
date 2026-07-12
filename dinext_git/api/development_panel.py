@@ -144,6 +144,12 @@ def _build_group_metadata(mapping: dict | None) -> dict:
 	}
 
 
+def _branch_options_error_message(exc: Exception) -> str:
+	if exc.args:
+		return str(exc.args[0])
+	return str(exc)
+
+
 def _should_show_gitlab_tab(doctype: str, doc: dict, mappings: list[dict]) -> bool:
 	if not mappings:
 		return False
@@ -257,7 +263,8 @@ def _panel_payload(doctype: str, name: str) -> dict:
 		default_base_branch = dialog_options["base_branch"]
 		can_create_branch = True
 	except Exception as exc:
-		branch_error = str(exc)
+		branch_error = _branch_options_error_message(exc)
+		frappe.clear_messages()
 		try:
 			branch_preview = preview_branch(doctype, name, selected_mapping_name)
 		except Exception:
