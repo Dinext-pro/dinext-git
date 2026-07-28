@@ -7,6 +7,7 @@ from dinext_git.api.gitlab_webhooks import _resolve_instance_name, _resolve_mapp
 from dinext_git.services.gitlab.normalizer import (
 	is_branch_delete_push,
 	is_tag_delete_push,
+	normalize_pipeline_event,
 	normalize_push_event,
 	normalize_release_event,
 	normalize_tag_push_event,
@@ -470,3 +471,65 @@ class TestGitLabWebhookIngest(FrappeTestCase):
 		self.assertEqual(deleted["branch"], artifact_name)
 		self.assertEqual(deleted["branches"], [artifact_name])
 		self.assertEqual(frappe.db.get_value("Development Artifact", artifact_name, "artifact_status"), "deleted")
+
+	def test_pipeline_event_tolerates_null_build_environment(self):
+		project = make_project()
+		task = make_task(project)
+		instance = make_gitlab_instance()
+		mapping = make_mapping(project, instance)
+
+		payload = {
+			"object_attributes": {
+				"id": 9001,
+				"ref": f"feature/{task}",
+				"sha": "abc123",
+				"status": "success",
+				"url": "https://gitlab.example.com/pipelines/9001",
+			},
+			"user": {"name": "Dev User", "email": "dev@example.com"},
+			"commit": {"title": f"{task} pipeline", "message": f"{task} pipeline"},
+			"merge_request": {},
+			"builds": [
+				{
+					"id": 8001,
+					"name": "build",
+					"stage": "build",
+					"status": "success",
+					"environment": None,
+					"user": {"name": "Dev User", "email": "dev@example.com"},
+				},
+				{
+					"id": 8002,
+					"name": "deploy",
+					"stage": "deploy",
+					"status": "success",
+					"environment": {"name": "production"},
+					"user": {"name": "Dev User", "email": "dev@example.com"},
+				},
+			],
+		}
+
+		result = normalize_pipeline_event(instance, mapping, payload)
+
+		self.assertTrue(result["pipeline"])
+		self.assertEqual(len(result["jobs"]), 2)
+		deployments = frappe.get_all(
+			"Development Artifact",
+			filters={
+				"gitlab_instance": instance,
+				"artifact_type": "deployment",
+				"external_id": "9001::8002",
+			},
+			pluck="name",
+		)
+		self.assertEqual(len(deployments), 1)
+		null_env_deployments = frappe.get_all(
+			"Development Artifact",
+			filters={
+				"gitlab_instance": instance,
+				"artifact_type": "deployment",
+				"external_id": "9001::8001",
+			},
+			pluck="name",
+		)
+		self.assertEqual(null_env_deployments, [])
