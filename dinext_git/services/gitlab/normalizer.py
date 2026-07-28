@@ -280,7 +280,8 @@ def normalize_pipeline_event(instance: str, mapping: str | None, payload: dict[s
 		_link_resolved_keys(job_artifact, resolved, "pipeline_ref")
 		job_artifacts.append(job_artifact)
 
-		if build.get("environment", {}).get("name"):
+		environment = build.get("environment") or {}
+		if environment.get("name"):
 			deployment_artifact = upsert_artifact(
 				build_artifact_payload(
 					instance=instance,
@@ -288,7 +289,7 @@ def normalize_pipeline_event(instance: str, mapping: str | None, payload: dict[s
 					artifact_type="deployment",
 					external_id=f"{attributes.get('id')}::{build['id']}",
 					data={
-						"artifact_name": build["environment"]["name"],
+						"artifact_name": environment["name"],
 						"ref_name": attributes.get("ref"),
 						"artifact_status": build.get("status"),
 						"web_url": None,
