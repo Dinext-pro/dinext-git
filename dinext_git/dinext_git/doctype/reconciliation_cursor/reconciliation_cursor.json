@@ -1,0 +1,110 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:GITCURSOR-{#####}",
+ "creation": "2026-05-28 03:29:37.682588",
+ "description": "Persist per-mapping reconciliation watermarks and job health",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "project_mapping",
+  "artifact_type",
+  "cursor_value",
+  "cursor_datetime",
+  "status",
+  "enabled",
+  "last_started_on",
+  "last_finished_on",
+  "last_error"
+ ],
+ "fields": [
+  {
+   "fieldname": "project_mapping",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Project Mapping",
+   "options": "GitLab Project Mapping",
+   "reqd": 1
+  },
+  {
+   "fieldname": "artifact_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Artifact Type",
+   "options": "branch\ncommit\nmerge_request\npipeline\njob\ndeployment\nrelease\ntag",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cursor_value",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Cursor Value"
+  },
+  {
+   "fieldname": "cursor_datetime",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Cursor Datetime"
+  },
+  {
+   "default": "idle",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "idle\nrunning\nfailed"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "last_started_on",
+   "fieldtype": "Datetime",
+   "label": "Last Started On"
+  },
+  {
+   "fieldname": "last_finished_on",
+   "fieldtype": "Datetime",
+   "label": "Last Finished On"
+  },
+  {
+   "fieldname": "last_error",
+   "fieldtype": "Small Text",
+   "label": "Last Error"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-28 03:39:23.131806",
+ "modified_by": "Administrator",
+ "module": "Dinext Git",
+ "name": "Reconciliation Cursor",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

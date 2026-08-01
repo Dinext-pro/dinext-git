@@ -1,0 +1,89 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:GITI-{#####}",
+ "creation": "2026-05-28 03:28:49.053799",
+ "description": "GitLab host-level configuration and webhook secret source",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "base_url",
+  "api_token",
+  "webhook_secret",
+  "enabled",
+  "verify_ssl",
+  "timeout_seconds"
+ ],
+ "fields": [
+  {
+   "description": "GitLab base URL, for example https://gitlab.example.com",
+   "fieldname": "base_url",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Base URL",
+   "reqd": 1
+  },
+  {
+   "fieldname": "api_token",
+   "fieldtype": "Password",
+   "label": "API Token",
+   "reqd": 1
+  },
+  {
+   "fieldname": "webhook_secret",
+   "fieldtype": "Password",
+   "label": "Webhook Secret",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
+  },
+  {
+   "default": "1",
+   "fieldname": "verify_ssl",
+   "fieldtype": "Check",
+   "label": "Verify SSL"
+  },
+  {
+   "default": "15",
+   "fieldname": "timeout_seconds",
+   "fieldtype": "Int",
+   "label": "Timeout Seconds"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-28 03:39:21.685181",
+ "modified_by": "Administrator",
+ "module": "Dinext Git",
+ "name": "GitLab Instance",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

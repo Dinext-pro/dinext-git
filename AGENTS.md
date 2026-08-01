@@ -9,10 +9,11 @@
 1. Прочитать этот stub целиком.
 2. Прочитать контракт доступа: `../dinext-docs/agents/ide/runtime-access.md`.
 3. Прочитать реестр: `../dinext-docs/agents/registry/index.yaml` и открыть по задаче релевантные `content_path`.
-4. Прочитать каноническое руководство: `../dinext-docs/agents/ide/agents/dinext-frappe-developer-guide.md`.
-5. При необходимости — central skills/rules из путей registry, каталоги `../dinext-docs/agents/ide/skills/` и `../dinext-docs/agents/ide/rules/`, workflow предложений `../dinext-docs/agents/ide/proposals/README.md`.
+4. Прочитать каноническое руководство-хаб: `../dinext-docs/agents/ide/agents/dinext-frappe-developer-guide.md`.
+5. По таблице навигации в hub открыть только релевантные topic assets: `../dinext-docs/agents/ide/guides/frappe/`, `../dinext-docs/agents/ide/skills/`, а optional reference `../dinext-docs/agents/ide/reference/frappe/` использовать только при явной необходимости.
+6. При необходимости — central rules и workflow предложений: `../dinext-docs/agents/ide/rules/`, `../dinext-docs/agents/ide/proposals/README.md`.
 
-**Не начинать** implementation, debug или review в этом приложении, пока не выполнены шаги 2–4 (минимум). Пропуск central слоя после чтения stub — **нарушение процесса**, а не допустимый fallback; полный контракт и приоритеты см. в `runtime-access.md`.
+**Не начинать** implementation, debug или review в этом приложении, пока не выполнены шаги 2–4 (минимум). После шага 4 нужно поднять именно релевантные topic assets из hub/registry, а не оставаться только на уровне заголовка. Пропуск central слоя после чтения stub — **нарушение процесса**, а не допустимый fallback; полный контракт и приоритеты см. в `runtime-access.md`.
 
 ## Приоритет
 
@@ -28,7 +29,9 @@
 
 ## Дополнительные пути (после минимального набора)
 
+- `../dinext-docs/agents/ide/guides/frappe/`
 - `../dinext-docs/agents/ide/skills/`
+- `../dinext-docs/agents/ide/reference/frappe/`
 - `../dinext-docs/agents/ide/rules/`
 - `../dinext-docs/agents/ide/proposals/README.md`
 

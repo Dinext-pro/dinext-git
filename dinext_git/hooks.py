@@ -5,6 +5,15 @@ app_description = "Git/GitLab integration and dev workflow for development teams
 app_email = "info@dinext.ru"
 app_license = "mit"
 
+fixtures = [
+	{
+		"doctype": "Custom Field",
+		"filters": [
+			["module", "=", "Dinext Git"],
+		],
+	}
+]
+
 # Apps
 # ------------------
 
@@ -47,8 +56,14 @@ required_apps = [
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_js = {
+	"Task": "public/js/task_development.js",
+	"Issue": "public/js/issue_development.js",
+}
+doctype_list_js = {
+	"Task": "public/js/task_development_list.js",
+	"Issue": "public/js/issue_development_list.js",
+}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -152,23 +167,19 @@ required_apps = [
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"dinext_git.tasks.all"
-# 	],
-# 	"daily": [
-# 		"dinext_git.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"dinext_git.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"dinext_git.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"dinext_git.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"hourly": [
+		"dinext_git.tasks.run_hourly_reconciliation",
+		"dinext_git.tasks.verify_webhook_health",
+	],
+	"daily": [
+		"dinext_git.tasks.run_daily_reconciliation",
+	],
+}
+
+default_log_clearing_doctypes = {
+	"GitLab Event Log": 30,
+}
 
 # Testing
 # -------
