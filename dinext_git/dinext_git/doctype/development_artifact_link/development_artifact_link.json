@@ -1,0 +1,108 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:GITLINK-{#####}",
+ "creation": "2026-05-28 03:29:20.435956",
+ "description": "Join normalized development artifacts to Task and Issue work items",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "link_uid",
+  "artifact",
+  "target_doctype",
+  "target_name",
+  "project",
+  "link_source",
+  "extracted_key",
+  "is_primary"
+ ],
+ "fields": [
+  {
+   "fieldname": "link_uid",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Link UID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "artifact",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Artifact",
+   "options": "Development Artifact",
+   "reqd": 1
+  },
+  {
+   "fieldname": "target_doctype",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Target DocType",
+   "options": "Task\nIssue",
+   "reqd": 1
+  },
+  {
+   "fieldname": "target_name",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Target Name",
+   "options": "target_doctype",
+   "reqd": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "fieldname": "link_source",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Link Source",
+   "options": "branch_name\ncommit_message\nmr_title\nmr_description\npipeline_ref\ndeployment_ref\nrelease_ref\nreconcile\nmigration\nbranch_create",
+   "reqd": 1
+  },
+  {
+   "fieldname": "extracted_key",
+   "fieldtype": "Data",
+   "label": "Extracted Key"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_primary",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Primary"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-28 03:39:23.015188",
+ "modified_by": "Administrator",
+ "module": "Dinext Git",
+ "name": "Development Artifact Link",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

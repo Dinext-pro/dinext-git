@@ -1,0 +1,58 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:GTVR-{#####}",
+ "creation": "2026-05-30 02:25:36.284068",
+ "description": "Child table of Project for controlling GitLab tab visibility by Task and Issue types",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "target_doctype",
+  "task_type",
+  "issue_type"
+ ],
+ "fields": [
+  {
+   "fieldname": "target_doctype",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Target DocType",
+   "options": "Task\nIssue",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.target_doctype === 'Task'",
+   "fieldname": "task_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Task Type",
+   "options": "Task Type"
+  },
+  {
+   "depends_on": "eval:doc.target_doctype === 'Issue'",
+   "fieldname": "issue_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Issue Type",
+   "options": "Issue Type"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-30 02:25:36.284068",
+ "modified_by": "Administrator",
+ "module": "Dinext Git",
+ "name": "GitLab Type Visibility Rule",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
