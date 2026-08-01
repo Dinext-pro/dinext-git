@@ -12,6 +12,7 @@
 4. Прочитать каноническое руководство-хаб: `../dinext-docs/agents/ide/agents/dinext-frappe-developer-guide.md`.
 5. По таблице навигации в hub открыть только релевантные topic assets: `../dinext-docs/agents/ide/guides/frappe/`, `../dinext-docs/agents/ide/skills/`, а optional reference `../dinext-docs/agents/ide/reference/frappe/` использовать только при явной необходимости.
 6. При необходимости — central rules и workflow предложений: `../dinext-docs/agents/ide/rules/`, `../dinext-docs/agents/ide/proposals/README.md`.
+7. Планы OpenSpec (proposal / design / specs / tasks) читать и создавать только в центральном Store `dinext-docs` (`openspec/` там; локально — только `openspec/config.yaml` с `store: dinext-docs`). Реализация кода — в этом репозитории. См. `../dinext-docs/process/development-management/openspec-store.md`.
 
 **Не начинать** implementation, debug или review в этом приложении, пока не выполнены шаги 2–4 (минимум). После шага 4 нужно поднять именно релевантные topic assets из hub/registry, а не оставаться только на уровне заголовка. Пропуск central слоя после чтения stub — **нарушение процесса**, а не допустимый fallback; полный контракт и приоритеты см. в `runtime-access.md`.
 
@@ -39,6 +40,7 @@
 
 - app-specific skills в `.cursor/skills/`, если они относятся только к этому приложению;
 - app-specific rules в `.cursor/rules/`, если они относятся только к этому приложению;
+- config-only OpenSpec pointer: `openspec/config.yaml` с единственной строкой `store: dinext-docs` (без локальных `openspec/specs` и `openspec/changes`);
 - опционально: скопировать в `.cursor/rules/` содержимое `../dinext-docs/agents/ide/navigation/consumer-always-apply-rule.mdc.example` (переименовать в `.mdc`), чтобы IDE поднимала central-first порядок автоматически.
 
 Если нужный shared-артефакт отсутствует локально, не создавай его в этом репозитории. Добавляй или обновляй его в `dinext-docs`.
