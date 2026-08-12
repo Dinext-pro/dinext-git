@@ -6,6 +6,7 @@ from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_to_date, now_datetime
 
 from dinext_git.services.gitlab.utils import json_dumps, make_uid
+from dinext_git.tests.test_utils import make_gitlab_instance
 
 
 class TestGitLabEventLog(FrappeTestCase):
@@ -29,22 +30,25 @@ class TestGitLabEventLog(FrappeTestCase):
 	def test_run_log_clean_up_deletes_old_gitlab_event_logs(self):
 		now = now_datetime()
 		old_timestamp = add_to_date(now, days=-40)
+		instance = make_gitlab_instance()
 
-		old_name = self._create_event_log(event_type="Push Hook", delivery_id="old", modified=old_timestamp)
-		new_name = self._create_event_log(event_type="Pipeline Hook", delivery_id="new")
+		old_name = self._create_event_log(
+			instance=instance, event_type="Push Hook", delivery_id="old", modified=old_timestamp
+		)
+		new_name = self._create_event_log(instance=instance, event_type="Pipeline Hook", delivery_id="new")
 
 		run_log_clean_up()
 
 		self.assertFalse(frappe.db.exists("GitLab Event Log", old_name))
 		self.assertTrue(frappe.db.exists("GitLab Event Log", new_name))
 
-	def _create_event_log(self, *, event_type: str, delivery_id: str, modified=None) -> str:
+	def _create_event_log(self, *, instance: str, event_type: str, delivery_id: str, modified=None) -> str:
 		payload = {"event_type": event_type, "delivery_id": delivery_id}
 		doc = frappe.get_doc(
 			{
 				"doctype": "GitLab Event Log",
 				"event_uid": make_uid("test-instance", event_type, delivery_id),
-				"gitlab_instance": "GITI-00296",
+				"gitlab_instance": instance,
 				"event_type": event_type,
 				"delivery_id": delivery_id,
 				"payload_json": json_dumps(payload),
