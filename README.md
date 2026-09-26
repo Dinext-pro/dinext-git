@@ -716,4 +716,4 @@ bench --site your-site.local export-fixtures --app dinext_git
 
 ## License
 
-MIT
+GNU GPL v3. Текст — в [license.txt](license.txt).
