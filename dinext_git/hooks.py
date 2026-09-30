@@ -3,7 +3,7 @@ app_title = "Dinext Git"
 app_publisher = "Dinext"
 app_description = "Git/GitLab integration and dev workflow for development teams"
 app_email = "info@dinext.ru"
-app_license = "mit"
+app_license = "GNU General Public License (v3)"
 
 fixtures = [
 	{
@@ -102,7 +102,8 @@ doctype_list_js = {
 # ------------
 
 # before_install = "dinext_git.install.before_install"
-# after_install = "dinext_git.install.after_install"
+after_install = "dinext_git.install.after_install"
+after_migrate = "dinext_git.install.after_migrate"
 
 # Uninstallation
 # ------------
