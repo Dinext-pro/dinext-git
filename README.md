@@ -1,50 +1,52 @@
+[Русский](README.ru.md)
+
 # Dinext Git
 
-## 📖 Обзор
+## 📖 Overview
 
-**Dinext Git** — Frappe-приложение для GitLab traceability внутри Dinext. Оно связывает стандартные `Task` и `Issue` с branch, commit, merge request, pipeline, job, deployment, release и tag; показывает состояние разработки прямо в карточке Dinext и позволяет команде жить без Jira как отдельного development-tracker.
+**Dinext Git** is a Frappe application for GitLab traceability within Dinext. It links standard `Task` and `Issue` documents to branches, commits, merge requests, pipelines, jobs, deployments, releases and tags; displays development status directly in the Dinext form; and lets the team work without Jira as a separate development tracker.
 
-Приложение не заменяет `dinext_projects`, а расширяет его: планирование и владение задачами остаются в Dinext, а GitLab становится источником фактов о разработке. Целевая модель traceability: `Issue/Task -> branch -> MR -> pipeline/job -> deployment/release`.
+The application extends `dinext_projects` rather than replacing it: planning and task ownership remain in Dinext, while GitLab becomes the source of development facts. The target traceability model is `Issue/Task -> branch -> MR -> pipeline/job -> deployment/release`.
 
-## ✨ Возможности
+## ✨ Features
 
-- multi-instance конфигурация GitLab через `GitLab Instance`
-- множественный маппинг `Project -> GitLab project` через child table `GitLab Project Mappings` на вкладке `Development`
-- правила видимости вкладки Development по типам `Task`/`Issue` через child table `GitLab Type Visibility Rules` на форме `Project`
-- отдельная вкладка **Development** на формах `Task` и `Issue`; она показывается только при наличии GitLab mapping у проекта и при выполнении правил видимости по типу
-- branch creation из `Task`/`Issue` с preview имени ветки, default mapping, ручным выбором GitLab repository, редактируемым `branch_naming_template` и выбором `Base branch` из live-списка GitLab
-- поддержка нескольких branch для одного `Task`/`Issue`, включая несколько branch в одном GitLab repository
-- персональные GitLab token на уровне `User` для `Create Branch` без fallback на system token
-- автоматическая регистрация, проверка и восстановление GitLab webhooks из Dinext
-- ingest GitLab webhooks (`push`, `merge request`, `pipeline`, `tag push`, `release`) с event log и idempotent normalization
-- soft-delete синхронизация: удалённые в GitLab объекты помечаются в Dinext как `artifact_status = deleted` и исключаются из summary, вкладки Development и отчётов (история и связи сохраняются)
-- generic model артефактов разработки (`Development Artifact`, `Development Artifact Link`)
-- проекция dev summary в стандартные `Task` и `Issue`, включая канонический `custom_git_development_status` (`Not started`, `In progress`, `Merged`, `Declined`, `Pipeline failed`, `Deployed`)
-- колонка и стандартный фильтр **Development Status** в list view `Task`/`Issue`; локализованные подписи через `doctype_list_js`
-- shared UI-модуль вкладки Development (`development_panel_ui.js`, `development_panel.css`): status pills, author chips, ссылки на GitLab project/MR, группировка артефактов по repository
-- configurable workflow automation через `Development Workflow Rule`
-- Development block на формах `Task` и `Issue`
-- Script Reports для traceability exceptions и release composition
-- Workspace **Разработки** — git-cockpit для команды: 12 Number Cards по `custom_git_development_status` и `custom_git_discrepancy_flags`, предупреждения, отчёты и настройки интеграции (не дублирует «Мои задачи» / «Мои проекты» из `dinext_projects`)
-- русская локализация UI и статусов через [`dinext_git/translations/ru.csv`](dinext_git/translations/ru.csv)
-- scheduled reconciliation и webhook health checks
-- миграция legacy Jira-style keys в `Development Key Alias`
-- meta-aware сопоставление Dinext key при ingest GitLab metadata: маски именования берутся из Meta `Task`/`Issue`, поддерживаются ручные имена и alias registry
+- Multi-instance GitLab configuration through `GitLab Instance`
+- Multiple `Project -> GitLab project` mappings through the `GitLab Project Mappings` child table on the `Development` tab
+- Development tab visibility rules by `Task`/`Issue` type through the `GitLab Type Visibility Rules` child table on the `Project` form
+- A separate **Development** tab on the `Task` and `Issue` forms, shown only when the project has a GitLab mapping and the type visibility rules are satisfied
+- Branch creation from `Task`/`Issue` with a branch name preview, default mapping, manual GitLab repository selection, an editable `branch_naming_template`, and `Base branch` selection from a live GitLab list
+- Multiple branches for one `Task`/`Issue`, including multiple branches in the same GitLab repository
+- Personal GitLab tokens on `User` for `Create Branch`, without falling back to a system token
+- Automatic GitLab webhook registration, verification and recovery from Dinext
+- GitLab webhook ingestion (`push`, `merge request`, `pipeline`, `tag push`, `release`) with an event log and idempotent normalization
+- Soft-delete synchronization: objects deleted in GitLab are marked `artifact_status = deleted` in Dinext and excluded from summaries, the Development tab and reports (history and links are retained)
+- A generic development artifact model (`Development Artifact`, `Development Artifact Link`)
+- Development summary projection into standard `Task` and `Issue`, including the canonical `custom_git_development_status` (`Not started`, `In progress`, `Merged`, `Declined`, `Pipeline failed`, `Deployed`)
+- A **Development Status** column and standard filter in `Task`/`Issue` list views; localized labels through `doctype_list_js`
+- A shared Development tab UI module (`development_panel_ui.js`, `development_panel.css`): status pills, author chips, GitLab project/MR links and artifact grouping by repository
+- Configurable workflow automation through `Development Workflow Rule`
+- A Development block on the `Task` and `Issue` forms
+- Script Reports for traceability exceptions and release composition
+- **Development** workspace — the team's Git cockpit: 12 Number Cards for `custom_git_development_status` and `custom_git_discrepancy_flags`, warnings, reports and integration settings (without duplicating My Tasks / My Projects from `dinext_projects`)
+- Russian localization of the UI and statuses through [`dinext_git/translations/ru.csv`](dinext_git/translations/ru.csv)
+- Scheduled reconciliation and webhook health checks
+- Migration of legacy Jira-style keys into `Development Key Alias`
+- Metadata-aware Dinext key matching during GitLab metadata ingestion: naming patterns come from `Task`/`Issue` Meta, with support for manual names and the alias registry
 
-### Границы приложения
+### Application boundaries
 
-| Область | Где реализовано |
+| Area | Implemented in |
 |---------|-----------------|
-| Проектное управление, таймшиты, Issue-расширения | `dinext_projects` |
+| Project management, timesheets, Issue extensions | `dinext_projects` |
 | Gantt, burndown, story points | `dinext_project_tasks_gantt` |
 | Stage-gate, scope, P&L | `dinext_project_stage_gate`, `dinext_project_scope`, `dinext_projects_pl` |
 | Git/GitLab traceability, dev workflow | **Dinext Git** |
-| Личные списки задач и проектов (`Мои задачи`, `Мои проекты`) | `dinext_projects` |
-| Сводка Git-разработки, исключения traceability, release composition | **Dinext Git** (Workspace **Разработки**) |
+| Personal task and project lists (`Мои задачи`, `Мои проекты` — My Tasks, My Projects) | `dinext_projects` |
+| Git development summary, traceability exceptions, release composition | **Dinext Git** (**Development** workspace) |
 
-## 🚀 Установка
+## 🚀 Installation
 
-Установите приложение в существующий Administrator, где уже есть `erpnext`, `dinext_common` и `dinext_projects`:
+Install the application into an existing Administrator that already has `erpnext`, `dinext_common` and `dinext_projects`:
 
 ```bash
 cd /path/to/frappe-bench
@@ -55,234 +57,234 @@ bench --site your-site.local export-fixtures --app dinext_git
 bench build --app dinext_git
 ```
 
-Если вы применяете metadata-изменения в developer mode, убедитесь, что он включен на сайте до создания или обновления DocType:
+If you apply metadata changes in developer mode, make sure it is enabled on the site before creating or updating DocTypes:
 
 ```bash
 bench --site your-site.local set-config developer_mode 1
 ```
 
-## 🛠️ Использование
+## 🛠️ Usage
 
-### Операторская настройка
+### Operator setup
 
-1. Создайте запись `GitLab Instance` и укажите:
+1. Create a `GitLab Instance` record and specify:
    - `base_url`
    - `api_token`
    - `webhook_secret`
    - `verify_ssl`
    - `timeout_seconds`
-2. Для каждого Dinext-проекта откройте `Project -> Development` и заполните child table **GitLab Project Mappings**:
+2. For each Dinext project, open `Project -> Development` and fill in the **GitLab Project Mappings** child table:
    - `gitlab_instance`
    - `gitlab_group_path`
    - `gitlab_project_path`
    - `default_base_branch`
    - `branch_naming_template`
    - `enabled`
-   - `is_default` для одного основного repository
-3. Если у проекта несколько mapping, держите ровно один enabled-row с **Default Mapping**.
-4. При необходимости заполните child table **GitLab Type Visibility Rules** в секции Development на форме `Project`:
-   - `target_doctype`: `Task` или `Issue`
-   - `task_type` или `issue_type`: конкретный тип, для которого показывается вкладка Development
-   - если поле типа оставить пустым, вкладка Development становится доступна для **всех** типов соответствующего DocType
-   - если правил для DocType нет, ограничение по типам не применяется
-5. Из Dinext вызовите webhook admin action (`sync` / `verify`) для регистрации или восстановления хука.
-6. Каждый разработчик, который использует **Create Branch**, должен заполнить в своём `User` поле **GitLab Branch Token**.
+   - `is_default` for one primary repository
+3. If a project has multiple mappings, keep exactly one enabled row marked **Default Mapping**.
+4. If necessary, fill in the **GitLab Type Visibility Rules** child table in the Development section of the `Project` form:
+   - `target_doctype`: `Task` or `Issue`
+   - `task_type` or `issue_type`: the specific type for which the Development tab is shown
+   - leaving the type field empty makes the Development tab available for **all** types of that DocType
+   - if the DocType has no rules, no type restriction is applied
+5. Invoke the webhook admin action (`sync` / `verify`) from Dinext to register or restore the hook.
+6. Every developer using **Create Branch** must fill in **GitLab Branch Token** on their `User`.
 
-Системные поля строк `GitLab Project Mapping` (`webhook_status`, `webhook_last_error`, `last_reconciled_*` и др.) управляются приложением и доступны только для чтения. Свойства полей (`read_only`, `hidden`, `is_default` и т.д.) задаются в самом DocType `GitLab Project Mapping`, а не через `Property Setter` / `Custom Field` на этом доктайпе.
+System fields in `GitLab Project Mapping` rows (`webhook_status`, `webhook_last_error`, `last_reconciled_*`, etc.) are managed by the application and are read-only. Field properties (`read_only`, `hidden`, `is_default`, etc.) are defined in the `GitLab Project Mapping` DocType itself, rather than through `Property Setter` / `Custom Field` on that DocType.
 
-### Требуемые GitLab token scopes
+### Required GitLab token scopes
 
-- Для `GitLab Instance.api_token`:
-  - чтение проекта и репозитория
-  - чтение списка веток (для reconciliation orphan branches)
-  - управление project webhooks
-  - чтение MR / pipeline / job / release данных для reconciliation
-- Для `User.GitLab Branch Token`:
-  - доступ к выбранному GitLab repository
-  - чтение списка веток (для выбора `Base branch` в диалоге **Create Branch**)
-  - создание branch
+- For `GitLab Instance.api_token`:
+  - project and repository read access
+  - reading the branch list (for orphan branch reconciliation)
+  - managing project webhooks
+  - reading MR / pipeline / job / release data for reconciliation
+- For `User.GitLab Branch Token`:
+  - access to the selected GitLab repository
+  - reading the branch list (to select `Base branch` in the **Create Branch** dialog)
+  - branch creation
 
-`Create Branch` использует только персональный **GitLab Branch Token** пользователя и не делает fallback на `GitLab Instance.api_token`.
+`Create Branch` uses only the user's personal **GitLab Branch Token** and does not fall back to `GitLab Instance.api_token`.
 
-### Как работать команде
+### Team workflow
 
-1. Разработка стартует из Dinext `Task` или `Issue`.
-2. Перед первым **Create Branch** разработчик заполняет в своём профиле **GitLab Branch Token**.
-3. Если у проекта настроен GitLab mapping и тип документа разрешён правилами видимости, на форме появляется вкладка **Development** с блоком разработки и кнопкой **Create Branch**.
-4. Разработчик использует кнопку **Create Branch** или включает Dinext key в branch/MR/commit вручную.
-5. Диалог **Create Branch** открывается уже с default GitLab repository, его `branch_naming_template` и `default_base_branch`. Пользователь может разово изменить шаблон (без сохранения в mapping) и выбрать `Base branch` из live-списка веток GitLab; итоговое имя ветки Dinext preview рассчитывает на сервере.
-6. Один `Task`/`Issue` может иметь несколько branch artifacts; повторное создание branch не блокируется уже существующей активной веткой.
-7. Если у проекта несколько GitLab mapping, Dinext использует **Default Mapping** для initial preview; при нескольких mapping без default — первый enabled mapping. В диалоге можно выбрать другой repository.
-8. Рекомендуемая конвенция именования: ветка, MR title и commit message должны содержать **Dinext key** (фактический `name` work item).
-9. Legacy Jira keys и другие альтернативные идентификаторы резолвятся через `Development Key Alias`; canonical reference для новых артефактов — Dinext key.
-10. Для обзора команды и тимлида используйте Workspace **Разработки** в модуле Dinext Git (см. ниже).
+1. Development starts from a Dinext `Task` or `Issue`.
+2. Before the first **Create Branch**, the developer fills in **GitLab Branch Token** in their profile.
+3. If the project has a GitLab mapping and the document type is permitted by visibility rules, the form displays the **Development** tab with a development block and a **Create Branch** button.
+4. The developer uses **Create Branch** or manually includes the Dinext key in the branch/MR/commit.
+5. The **Create Branch** dialog opens with the default GitLab repository, its `branch_naming_template` and `default_base_branch` already selected. The user can change the template once (without saving it to the mapping) and choose `Base branch` from the live GitLab branch list; Dinext calculates the final branch name preview on the server.
+6. One `Task`/`Issue` can have multiple branch artifacts; an existing active branch does not prevent creating another.
+7. If a project has multiple GitLab mappings, Dinext uses **Default Mapping** for the initial preview; if none is default, it uses the first enabled mapping. Another repository can be selected in the dialog.
+8. Recommended naming convention: the branch, MR title and commit message should contain the **Dinext key** (the work item's actual `name`).
+9. Legacy Jira keys and other alternative identifiers resolve through `Development Key Alias`; the canonical reference for new artifacts is the Dinext key.
+10. For a team and team lead overview, use the **Development** workspace in the Dinext Git module (see below).
 
-### Workspace «Разработки»
+### Development workspace
 
-Стандартный Frappe Workspace — единая точка входа в Git/traceability-контекст. Он **не заменяет** workspace'ы `dinext_projects` для личной работы с задачами и проектами; здесь только агрегированная картина разработки по полям `custom_git_development_status`, `custom_git_discrepancy_flags` и `custom_git_artifact_count` на `Task`/`Issue`.
+The standard Frappe Workspace is a single entry point into the Git/traceability context. It **does not replace** the `dinext_projects` workspaces for personal task and project work; it provides only an aggregated development view based on `custom_git_development_status`, `custom_git_discrepancy_flags` and `custom_git_artifact_count` on `Task`/`Issue`.
 
-**Доступ:** роли `Dinext_User` и `System Manager`.
+**Access:** `Dinext_User` and `System Manager` roles.
 
-**Поставка:** JSON [`dinext_git/dinext_git/workspace/разработки/разработки.json`](dinext_git/dinext_git/workspace/разработки/разработки.json) и 12 Number Cards в [`dinext_git/dinext_git/number_card/`](dinext_git/dinext_git/number_card/) синхронизируются при `bench migrate` как module metadata.
+**Delivery:** the JSON [`dinext_git/dinext_git/workspace/разработки/разработки.json`](dinext_git/dinext_git/workspace/разработки/разработки.json) and 12 Number Cards in [`dinext_git/dinext_git/number_card/`](dinext_git/dinext_git/number_card/) synchronize during `bench migrate` as module metadata.
 
-| Секция | Содержимое |
+| Section | Content |
 |--------|------------|
-| **Сводка разработки** | 6 Number Cards по `custom_git_development_status`: «В разработке», «Слито», «Развернуто» для `Task` и `Issue` |
-| **Предупреждения и исключения** | 6 Number Cards: расхождения (`custom_git_discrepancy_flags`), «Отклонено» (`Declined`), `Pipeline failed` для `Task`/`Issue`; shortcuts на отчёты **GitLab Traceability Exceptions**, **GitLab Release Composition** и список **Development Artifact** |
-| **Отчёты и настройки** | Link cards: артефакты, `GitLab Instance`, workflow rules, alias registry, event log, reconciliation |
+| **Development Summary** | 6 Number Cards by `custom_git_development_status`: In Development, Merged, Deployed for `Task` and `Issue` |
+| **Warnings and Exceptions** | 6 Number Cards: discrepancies (`custom_git_discrepancy_flags`), Declined (`Declined`), `Pipeline failed` for `Task`/`Issue`; shortcuts to **GitLab Traceability Exceptions**, **GitLab Release Composition** reports and the **Development Artifact** list |
+| **Reports and Settings** | Link cards: artifacts, `GitLab Instance`, workflow rules, alias registry, event log, reconciliation |
 
-Number Cards ведут на отфильтрованные списки `Task`/`Issue`. Детальный разбор исключений — через Script Reports и DocType **Development Artifact**.
+Number Cards open filtered `Task`/`Issue` lists. Script Reports and the **Development Artifact** DocType provide detailed exception analysis.
 
-**v2 (не в первой поставке):** dashboard charts, custom dev board block, дополнительные KPI.
+**v2 (not in the initial delivery):** dashboard charts, a custom development board block, additional KPIs.
 
-После установки или обновления приложения:
+After installing or updating the application:
 
 ```bash
-bench --site your-site.local install-app dinext_git   # если приложение ещё не установлено
+bench --site your-site.local install-app dinext_git   # if the application is not installed yet
 bench --site your-site.local migrate
 ```
 
-### Сопоставление Dinext key (GitLab → Dinext)
+### Dinext key matching (GitLab → Dinext)
 
-Обратный мэппинг work item из branch/MR/commit/pipeline metadata выполняется в [`matcher.py`](dinext_git/services/gitlab/matcher.py) через `resolve_keys()`. Вызывается из [`normalizer.py`](dinext_git/services/gitlab/normalizer.py) при ingest webhook и reconciliation.
+Reverse work item mapping from branch/MR/commit/pipeline metadata is performed by [`matcher.py`](dinext_git/services/gitlab/matcher.py) through `resolve_keys()`. It is called from [`normalizer.py`](dinext_git/services/gitlab/normalizer.py) during webhook ingestion and reconciliation.
 
-| Направление | Источник ключа | Поведение |
+| Direction | Key source | Behavior |
 |-------------|----------------|-----------|
-| Dinext → GitLab | `doc.name` | **Create Branch** всегда подставляет фактический `name` в `{key}` шаблона ветки |
-| GitLab → Dinext | branch, MR title/description, commit message, pipeline ref | Извлечение кандидатов + verify по `Task`/`Issue` и alias registry |
+| Dinext → GitLab | `doc.name` | **Create Branch** always inserts the actual `name` into the branch template's `{key}` |
+| GitLab → Dinext | branch, MR title/description, commit message, pipeline ref | Candidate extraction + verification against `Task`/`Issue` and the alias registry |
 
-Извлечение кандидатов — двухуровневое:
+Candidate extraction has two levels:
 
-1. **Meta-derived patterns** — regex строятся из `frappe.get_meta()` для `Task` и `Issue`:
-   - expression autoname (например `TASK-.YYYY.-.#####`);
-   - `naming_series:` и все options поля `naming_series` (например `ISS-.YYYY.-` → `ISS-.YYYY.-.#####`).
-   - учитываются Property Setter и другие metadata overrides, уже включённые в Meta.
-2. **Fallback** — enabled записи `Development Key Alias`, generic token extraction с усечением branch slug suffix (`feature/{key}-sample` → `{key}`), legacy Jira-style pattern.
+1. **Meta-derived patterns** — regular expressions are built from `frappe.get_meta()` for `Task` and `Issue`:
+   - expression autoname (for example, `TASK-.YYYY.-.#####`);
+   - `naming_series:` and all options of the `naming_series` field (for example, `ISS-.YYYY.-` → `ISS-.YYYY.-.#####`).
+   - Property Setter and other metadata overrides already included in Meta are accounted for.
+2. **Fallback** — enabled `Development Key Alias` records, generic token extraction with branch slug suffix trimming (`feature/{key}-sample` → `{key}`), and a legacy Jira-style pattern.
 
-Резолв кандидата:
+Candidate resolution:
 
-- exact match по `name` в `Task` или `Issue` (исходный регистр и upper-case);
-- иначе lookup в `Development Key Alias`.
+- exact `name` match in `Task` or `Issue` (original case and uppercase);
+- otherwise, lookup in `Development Key Alias`.
 
-Сценарии:
+Scenarios:
 
-| Сценарий | Create Branch | Автолинковка из GitLab |
+| Scenario | Create Branch | Automatic linking from GitLab |
 |----------|---------------|------------------------|
-| Стандартный Task/Issue key по naming series | OK | OK |
-| Ручное имя work item (`prompt`, import, кастомный `name`) | OK | OK через generic fallback + verify |
-| Legacy Jira key | OK, если key в ветке — Dinext name | OK через `Development Key Alias` |
-| Кастомная naming series на сайте | OK | OK после изменения Meta (кэш matcher обновляется при restart worker / `clear_matcher_caches`) |
+| Standard Task/Issue key from naming series | OK | OK |
+| Manual work item name (`prompt`, import, custom `name`) | OK | OK through generic fallback + verification |
+| Legacy Jira key | OK if the branch key is the Dinext name | OK through `Development Key Alias` |
+| Custom naming series on the site | OK | OK after updating Meta (the matcher cache refreshes on worker restart / `clear_matcher_caches`) |
 
-Если ключ не распознаётся автоматически, добавьте запись в **Development Key Alias** с типом `Dinext Key` или `Jira Legacy Key`.
+If the key is not recognized automatically, add a **Development Key Alias** record with type `Dinext Key` or `Jira Legacy Key`.
 
-### Диалог Create Branch
+### Create Branch dialog
 
-При открытии формы `Task`/`Issue` сервер через `development_panel.get_panel` отдаёт bootstrap для диалога:
+When a `Task`/`Issue` form opens, the server provides dialog bootstrap data through `development_panel.get_panel`:
 
-| Поле payload | Назначение |
+| Payload field | Purpose |
 |--------------|------------|
-| `default_mapping_name` | Стартовый GitLab repository (default mapping или fallback) |
-| `default_branch_template` | Шаблон имени ветки из mapping |
-| `default_base_branch` | Базовая ветка из mapping |
-| `available_base_branches` | Live-список веток GitLab для выбранного repository |
-| `branch_preview` | Server-side preview имени ветки для стартовых значений |
-| `branch_mapping_options` | Список mapping, если их несколько |
+| `default_mapping_name` | Initial GitLab repository (default mapping or fallback) |
+| `default_branch_template` | Branch naming template from the mapping |
+| `default_base_branch` | Base branch from the mapping |
+| `available_base_branches` | Live GitLab branch list for the selected repository |
+| `branch_preview` | Server-side branch name preview using the initial values |
+| `branch_mapping_options` | Mapping list if multiple mappings exist |
 
-UI-логика в [`task_development.js`](dinext_git/public/js/task_development.js), [`issue_development.js`](dinext_git/public/js/issue_development.js) и shared-модуле [`development_panel_ui.js`](dinext_git/public/js/development_panel_ui.js):
+UI logic is in [`task_development.js`](dinext_git/public/js/task_development.js), [`issue_development.js`](dinext_git/public/js/issue_development.js), and the shared [`development_panel_ui.js`](dinext_git/public/js/development_panel_ui.js) module:
 
-1. Диалог открывается с уже подставленными template и base branch.
-2. Поле **Branch naming template** — разовый override только для текущего создания; `GitLab Project Mapping.branch_naming_template` не меняется.
-3. Поле **Base branch** — select из `available_base_branches`; при смене mapping список перезагружается через `gitlab_branches.options`.
-4. Preview и create всегда идут через сервер (`preview` / `create`) с параметрами `mapping_name`, `branch_template`, `base_branch`.
+1. The dialog opens with the template and base branch already populated.
+2. **Branch naming template** is a one-time override for the current creation; `GitLab Project Mapping.branch_naming_template` remains unchanged.
+3. **Base branch** selects from `available_base_branches`; changing the mapping reloads the list through `gitlab_branches.options`.
+4. Preview and creation always run through the server (`preview` / `create`) with `mapping_name`, `branch_template`, `base_branch` parameters.
 
-Поддерживаемые placeholders в `branch_naming_template`:
+Supported `branch_naming_template` placeholders:
 
-| Placeholder | Значение |
+| Placeholder | Value |
 |-------------|----------|
-| `{key}` | Dinext key work item (обязателен в шаблоне) |
-| `{slug}` | slug из subject work item |
-| `{doctype}` | `task` или `issue` |
-| `{type_slug}` | `feature` для Task, `bugfix` для Issue |
+| `{key}` | The work item's Dinext key (required in the template) |
+| `{slug}` | Slug from the work item subject |
+| `{doctype}` | `task` or `issue` |
+| `{type_slug}` | `feature` for Task, `bugfix` for Issue |
 | `{project}` | slug Dinext project |
 
-Сервер дополнительно проверяет, что итоговое имя ветки содержит Dinext key, является корректным git ref и не конфликтует с уже существующей branch в GitLab или среди активных artifacts.
+The server also checks that the final branch name contains the Dinext key, is a valid git ref and does not conflict with an existing branch in GitLab or among active artifacts.
 
-Если GitLab API недоступен или у пользователя нет **GitLab Branch Token**, `can_create_branch` становится `false`, а в payload попадает `branch_error`. При открытии формы UI показывает это предупреждение жёлтым `frappe.show_alert`, а не модальным окном; кнопка **Create Branch** скрывается. В диалоге **Create Branch** та же ошибка отображается inline вместо preview.
+If the GitLab API is unavailable or the user has no **GitLab Branch Token**, `can_create_branch` becomes `false`, and `branch_error` is included in the payload. On form opening, the UI shows this warning through a yellow `frappe.show_alert`, rather than a modal; **Create Branch** is hidden. In the **Create Branch** dialog, the same error appears inline instead of the preview.
 
-### Синхронизация удалений (soft-delete)
+### Deletion synchronization (soft delete)
 
-Когда объект исчезает в GitLab, Dinext не удаляет `Development Artifact` и `Development Artifact Link` физически. Запись артефакта переводится в tombstone-состояние `artifact_status = deleted`, а связи остаются для аудита и повторного использования, если объект снова появится в GitLab.
+When an object disappears in GitLab, Dinext does not physically delete `Development Artifact` and `Development Artifact Link`. The artifact enters the tombstone state `artifact_status = deleted`, while links remain for auditing and reuse if the object reappears in GitLab.
 
-Два канала синхронизации:
+Two synchronization channels:
 
-| Канал | Когда срабатывает | Что делает |
+| Channel | Trigger | Action |
 |-------|-------------------|------------|
-| Webhook `Push Hook` | GitLab прислал delete-push (`after` / `checkout_sha` — all-zero SHA) | Помечает branch artifact как `deleted`, не создаёт commit artifacts, пересчитывает `custom_git_*` у связанных `Task`/`Issue`, применяет `Development Workflow Rule` для события `branch_deleted` |
-| Scheduled reconciliation | Hourly/daily job `reconcile_mapping` | Сверяет MR/pipeline/release через GitLab API и список веток с локальными artifacts; отсутствующие в remote branch помечает `deleted`, обновляет summary затронутых work items и применяет `branch_deleted` workflow rules |
+| Webhook `Push Hook` | GitLab sends a delete push (`after` / `checkout_sha` is an all-zero SHA) | Marks the branch artifact `deleted`, creates no commit artifacts, recalculates `custom_git_*` for linked `Task`/`Issue`, applies `Development Workflow Rule` for `branch_deleted` |
+| Scheduled reconciliation | Hourly/daily `reconcile_mapping` job | Compares MR/pipeline/release data through the GitLab API and branch lists with local artifacts; marks remotely absent branches `deleted`, updates affected work item summaries and applies `branch_deleted` workflow rules |
 
-Поведение в продукте:
+Product behavior:
 
-- удалённые артефакты не учитываются в `custom_git_*` summary на `Task`/`Issue`;
-- на вкладке **Development** они не показываются (после удаления branch снова доступен **Create Branch**);
-- отчёты traceability и release composition учитывают только активные артефакты.
+- deleted artifacts are excluded from `custom_git_*` summaries on `Task`/`Issue`;
+- they are hidden on the **Development** tab (deleting a branch makes **Create Branch** available again);
+- traceability and release composition reports include only active artifacts.
 
 ### Development Workflow Rule
 
-`Development Workflow Rule` переводит связанный `Task`/`Issue` по событиям разработки. Правило настраивается в Desk и поддерживает:
+`Development Workflow Rule` transitions the linked `Task`/`Issue` on development events. The rule is configured in Desk and supports:
 
-- **Target DocType**: `Task` или `Issue`
-- **Project**: необязательный scope; пустое значение означает правило для всех проектов
-- **Development Event**: событие разработки
-- **Target Field**: поле DocType типа `Select` или `Link`, в котором хранится workflow-состояние (по умолчанию `status`)
-- **Target Value** / **Only When Current Value**: целевое значение и guard по текущему значению выбранного поля
-- **Priority** / **Stop After Apply**: порядок применения и остановка после первого успешного правила
+- **Target DocType**: `Task` or `Issue`
+- **Project**: optional scope; an empty value means a rule for all projects
+- **Development Event**: development event
+- **Target Field**: a `Select` or `Link` DocType field storing the workflow state (default: `status`)
+- **Target Value** / **Only When Current Value**: target value and a guard on the selected field's current value
+- **Priority** / **Stop After Apply**: application order and stopping after the first successful rule
 
-Поддерживаемые события:
+Supported events:
 
-| Событие | Источник |
+| Event | Source |
 |---------|----------|
-| `branch_created` | Create Branch из Dinext |
-| `branch_linked` | GitLab Push Hook (не delete-push) |
-| `branch_deleted` | GitLab delete-push или reconciliation удалённых веток |
+| `branch_created` | Create Branch from Dinext |
+| `branch_linked` | GitLab Push Hook (not a delete push) |
+| `branch_deleted` | GitLab delete push or deleted branch reconciliation |
 | `mr_opened` | Merge Request Hook (`open` / `reopen`) |
-| `mr_review_started` | Merge Request Hook (`update` с изменением reviewers) |
+| `mr_review_started` | Merge Request Hook (`update` changing reviewers) |
 | `mr_changes_requested` | Merge Request Hook (`unapproved`) |
 | `mr_approved` | Merge Request Hook (`approved`) |
 | `mr_merged` | Merge Request Hook (`merge` / `state=merged`) |
 | `pipeline_failed` / `pipeline_succeeded` | Pipeline Hook |
-| `deployment_succeeded` | Pipeline Hook с успешным build/environment |
+| `deployment_succeeded` | Pipeline Hook with a successful build/environment |
 
-Применение правила выполняется через полный `Document.save()` выбранного `Task`/`Issue`, а не через `frappe.db.set_value`. Если save-cycle не проходит (например, `Task` переводится в `Completed` без обязательного `completed_on`), документ не меняется, а ошибка попадает в Error Log.
+A rule is applied through a full `Document.save()` of the selected `Task`/`Issue`, rather than `frappe.db.set_value`. If the save cycle fails (for example, a `Task` moves to `Completed` without the required `completed_on`), the document remains unchanged and the error is recorded in Error Log.
 
-После `bench migrate` существующим правилам автоматически проставляется `target_fieldname = status`.
+After `bench migrate`, existing rules automatically receive `target_fieldname = status`.
 
 ### Development Status
 
-Поле `custom_git_development_status` на `Task`/`Issue` — read-only проекция из активных `Development Artifact`. Канонические значения Select (и фильтры Number Cards) заданы в [`constants.py`](dinext_git/services/gitlab/constants.py):
+The `custom_git_development_status` field on `Task`/`Issue` is a read-only projection from active `Development Artifact` records. Canonical Select values (and Number Card filters) are defined in [`constants.py`](dinext_git/services/gitlab/constants.py):
 
-| Статус | Когда выставляется |
+| Status | Set when |
 |--------|-------------------|
-| `Not started` | Нет активных артефактов |
-| `In progress` | Есть branch или открытый MR |
-| `Merged` | Есть merged MR |
-| `Declined` | Есть закрытый/отклонённый MR без open/merged |
-| `Pipeline failed` | Последний pipeline со статусом `failed` (перекрывает merged/in progress) |
-| `Deployed` | Последний deployment со статусом `success` (наивысший приоритет) |
+| `Not started` | No active artifacts |
+| `In progress` | A branch or open MR exists |
+| `Merged` | A merged MR exists |
+| `Declined` | A closed/declined MR exists without an open/merged one |
+| `Pipeline failed` | The latest pipeline has status `failed` (overrides merged/in progress) |
+| `Deployed` | The latest deployment has status `success` (highest priority) |
 
-Расчёт выполняется в [`projector.py`](dinext_git/services/gitlab/projector.py); дополнительно проецируются `custom_git_discrepancy_flags`, `custom_git_artifact_count`, ссылки на filtered MR list в GitLab.
+The calculation runs in [`projector.py`](dinext_git/services/gitlab/projector.py); `custom_git_discrepancy_flags`, `custom_git_artifact_count`, and links to filtered MR lists in GitLab are also projected.
 
-Patch [`migrate_development_status_select_values`](dinext_git/patches/v0_0/migrate_development_status_select_values.py) переводит legacy machine-codes (`in_progress`, `merged`, …) в канонические подписи при upgrade.
+The [`migrate_development_status_select_values`](dinext_git/patches/v0_0/migrate_development_status_select_values.py) patch converts legacy machine codes (`in_progress`, `merged`, …) into canonical labels during upgrades.
 
 ### Upgrade notes
 
-- После `bench migrate` существующие `GitLab Project Mapping` автоматически привязываются к child table `Project.custom_git_project_mappings`.
-- Для enabled mapping автоматически выбирается один **Default Mapping**, если он не был задан ранее.
-- Поля webhook/reconciliation остаются на строках `GitLab Project Mapping`, но управляются из вкладки **Development** проекта.
-- Legacy значения `custom_git_development_status` (`in_progress`, `merged`, …) мигрируют в канонические Select labels через post-migrate patch.
+- After `bench migrate`, existing `GitLab Project Mapping` records automatically link to the `Project.custom_git_project_mappings` child table.
+- One **Default Mapping** is automatically selected among enabled mappings if none was set previously.
+- Webhook/reconciliation fields remain on `GitLab Project Mapping` rows but are managed from the project's **Development** tab.
+- Legacy `custom_git_development_status` values (`in_progress`, `merged`, …) migrate to canonical Select labels through a post-migrate patch.
 
-### Вызов API
+### API calls
 
-Основные whitelisted-методы:
+Main whitelisted methods:
 
 ```python
 dinext_git.api.development_panel.get_panel(doctype, name)
@@ -294,33 +296,33 @@ dinext_git.api.gitlab_webhook_admin.verify(mapping_name)
 dinext_git.api.gitlab_webhook_admin.verify_and_sync_instance(instance_name)
 ```
 
-На форме **GitLab Instance** доступна кнопка **Verify and Sync Webhooks**: для всех enabled `GitLab Project Mapping` этого instance выполняется `verify`, затем `sync` только для статусов `missing`, `drifted` и `failed`. Итог показывается в Desk summary.
+The **GitLab Instance** form has a **Verify and Sync Webhooks** button: it runs `verify` for all enabled `GitLab Project Mapping` records in that instance, then `sync` only for `missing`, `drifted` and `failed` statuses. The result is shown in a Desk summary.
 
-`get_panel` возвращает payload вкладки Development, включая bootstrap для диалога **Create Branch** (`default_branch_template`, `default_base_branch`, `available_base_branches`, `branch_preview`).
+`get_panel` returns the Development tab payload, including bootstrap data for **Create Branch** (`default_branch_template`, `default_base_branch`, `available_base_branches`, `branch_preview`).
 
-`gitlab_branches.options` возвращает template, base branch, список допустимых base branches и preview для выбранного mapping — используется при смене GitLab repository в диалоге.
+`gitlab_branches.options` returns the template, base branch, list of permitted base branches and preview for the selected mapping — used when switching the GitLab repository in the dialog.
 
-`gitlab_branches.preview` / `create` принимают разовый override `branch_template` и явный `base_branch`; slug для `{slug}` всегда вычисляется на сервере из subject work item.
+`gitlab_branches.preview` / `create` accept a one-time `branch_template` override and an explicit `base_branch`; the `{slug}` slug is always calculated on the server from the work item subject.
 
-Публичный webhook endpoint:
+Public webhook endpoint:
 
 ```text
 POST /api/method/dinext_git.api.gitlab_webhooks.receive
 ```
 
-## 📦 Технологии
+## 📦 Technologies
 
 - Python 3.10+
 - Frappe Framework / ERPNext
-- JavaScript form scripts и Script Reports
-- Ruff для Python linting
-- Prettier / ESLint / pyupgrade через pre-commit tooling
+- JavaScript form scripts and Script Reports
+- Ruff for Python linting
+- Prettier / ESLint / pyupgrade through pre-commit tooling
 
-## 🔧 Конфигурация
+## 🔧 Configuration
 
-Основная конфигурация приложения находится в [`dinext_git/hooks.py`](dinext_git/hooks.py).
+The main application configuration is in [`dinext_git/hooks.py`](dinext_git/hooks.py).
 
-Ключевые настройки и точки интеграции:
+Key settings and integration points:
 
 - `required_apps = ["frappe/erpnext", "dinext/dinext_common", "dinext/dinext_projects"]`
 - `doctype_js`:
@@ -330,128 +332,123 @@ POST /api/method/dinext_git.api.gitlab_webhooks.receive
   - `Task -> public/js/task_development_list.js`
   - `Issue -> public/js/issue_development_list.js`
 - `scheduler_events`:
-  - `hourly`: reconciliation и webhook health check
+  - `hourly`: reconciliation and webhook health checks
   - `daily`: reconciliation
-- `default_log_clearing_doctypes`: `GitLab Event Log` — 30 дней
-- экспорт fixtures только для `Custom Field` модуля Dinext Git (`fixtures/custom_field.json`)
-- module metadata (синхронизируется через `bench migrate`): Workspace, Number Cards, Reports, DocTypes
+- `default_log_clearing_doctypes`: `GitLab Event Log` — 30 days
+- Fixture exports only for `Custom Field` in the Dinext Git module (`fixtures/custom_field.json`)
+- Module metadata (synchronized through `bench migrate`): Workspace, Number Cards, Reports, DocTypes
 
-Приложение опирается на site metadata и export-fixtures, а не на переменные окружения.
+The application relies on site metadata and export-fixtures rather than environment variables.
 
 ### Metadata workflow
 
-Для **Custom Field** действует **MCP/UI first**:
+**Custom Field** changes follow **MCP/UI first**:
 
-1. изменить `Custom Field` в системе;
-2. выполнить `bench --site <site> migrate` при необходимости;
-3. синхронизировать репозиторий через `bench --site <site> export-fixtures --app dinext_git`.
+1. Update `Custom Field` in the system;
+2. run `bench --site <site> migrate` if needed;
+3. synchronize the repository through `bench --site <site> export-fixtures --app dinext_git`.
 
-Для DocType, Report, Number Card, Workspace — правки в module JSON под `dinext_git/dinext_git/` (или через MCP с последующим export в repo по принятому в команде workflow).
+For DocType, Report, Number Card and Workspace, edit module JSON under `dinext_git/dinext_git/` (or use MCP followed by an export into the repository under the team's workflow).
 
-Для `GitLab Project Mapping` изменения полей вносятся в DocType (`dinext_git/dinext_git/doctype/gitlab_project_mapping/gitlab_project_mapping.json`), а не через кастомизацию этого доктайпа.
+For `GitLab Project Mapping`, change fields in the DocType (`dinext_git/dinext_git/doctype/gitlab_project_mapping/gitlab_project_mapping.json`), rather than through customization of that DocType.
 
-**Нельзя** редактировать `fixtures/custom_field.json` вручную.
+**Do not** manually edit `fixtures/custom_field.json`.
 
-## ✅ Требования
+## ✅ Requirements
 
-- Рабочий Administrator
-- Установленные приложения:
+- A working Administrator
+- Installed applications:
   - `frappe`
   - `erpnext`
   - `dinext_common`
   - `dinext_projects`
-- Доступ к запуску `bench --site <site> migrate`
-- Включенный developer mode при создании/обновлении DocType или metadata в базе данных
+- Access to run `bench --site <site> migrate`
+- Developer mode enabled when creating/updating DocTypes or metadata in the database
 
-## 🤝 Вклад в проект
+## 🤝 Contributing
 
-Перед внесением изменений установите и включите `pre-commit`:
+Before making changes, install and enable `pre-commit`:
 
 ```bash
 cd apps/dinext_git
 pre-commit install
 ```
 
-В репозитории используются:
+The repository uses:
 
 - `ruff`
 - `eslint`
 - `prettier`
 - `pyupgrade`
 
-Минимальная проверка перед публикацией изменений:
+Minimum checks before publishing changes:
 
 ```bash
 bench --site your-site.local run-tests --app dinext_git
 bench --site your-site.local export-fixtures --app dinext_git
 ```
 
-При изменении metadata-driven поведения придерживайтесь такого процесса:
+Follow this process when changing metadata-driven behavior:
 
-1. Обновить код и metadata в системе
-2. Выполнить site migration
-3. Запустить целевые тесты
-4. Экспортировать fixtures
+1. Update code and metadata in the system
+2. Run site migration
+3. Run targeted tests
+4. Export fixtures
 
-Проектные правила разработки находятся в [`AGENTS.md`](AGENTS.md).
+Project development rules are in [`AGENTS.md`](AGENTS.md).
 
-## 📄 Документация
+## 📄 Documentation
 
-- [`README.md`](README.md) — обзор проекта на верхнем уровне
-- [`AGENTS.md`](AGENTS.md) — проектная доктрина и правила работы с Frappe
-- [`dinext_git/hooks.py`](dinext_git/hooks.py) — bootstrap приложения, fixtures, scheduler и client script bindings
-- [`dinext_git/api/development_panel.py`](dinext_git/api/development_panel.py) — payload вкладки Development, расчёт `show_gitlab_tab` и type visibility rules
-- [`dinext_git/api/gitlab_webhooks.py`](dinext_git/api/gitlab_webhooks.py) — публичный ingest GitLab webhooks
-- [`dinext_git/api/gitlab_branches.py`](dinext_git/api/gitlab_branches.py) — preview, options и создание branch из UI
+- [`README.md`](README.md) — high-level project overview
+- [`AGENTS.md`](AGENTS.md) — project doctrine and Frappe working rules
+- [`dinext_git/hooks.py`](dinext_git/hooks.py) — application bootstrap, fixtures, scheduler and client script bindings
+- [`dinext_git/api/development_panel.py`](dinext_git/api/development_panel.py) — Development tab payload, `show_gitlab_tab` calculation and type visibility rules
+- [`dinext_git/api/gitlab_webhooks.py`](dinext_git/api/gitlab_webhooks.py) — public GitLab webhook ingestion
+- [`dinext_git/api/gitlab_branches.py`](dinext_git/api/gitlab_branches.py) — preview, options and branch creation from the UI
 - [`dinext_git/services/gitlab/store.py`](dinext_git/services/gitlab/store.py) — persistence, `mark_artifact_deleted`, multi-mapping lookup
-- [`dinext_git/services/gitlab/projector.py`](dinext_git/services/gitlab/projector.py) — проекция summary на `Task`/`Issue` (без deleted artifacts)
-- [`dinext_git/services/gitlab/branch_actions.py`](dinext_git/services/gitlab/branch_actions.py) — бизнес-логика создания branch и user-scoped tokens
-- [`dinext_git/services/gitlab/matcher.py`](dinext_git/services/gitlab/matcher.py) — meta-aware извлечение и резолв Dinext key из GitLab metadata
-- [`dinext_git/services/gitlab/normalizer.py`](dinext_git/services/gitlab/normalizer.py) — нормализация webhook payload в артефакты
-- [`dinext_git/services/gitlab/reconcile.py`](dinext_git/services/gitlab/reconcile.py) — reconciliation и webhook health
+- [`dinext_git/services/gitlab/projector.py`](dinext_git/services/gitlab/projector.py) — summary projection onto `Task`/`Issue` (excluding deleted artifacts)
+- [`dinext_git/services/gitlab/branch_actions.py`](dinext_git/services/gitlab/branch_actions.py) — branch creation business logic and user-scoped tokens
+- [`dinext_git/services/gitlab/matcher.py`](dinext_git/services/gitlab/matcher.py) — metadata-aware extraction and resolution of Dinext keys from GitLab metadata
+- [`dinext_git/services/gitlab/normalizer.py`](dinext_git/services/gitlab/normalizer.py) — webhook payload normalization into artifacts
+- [`dinext_git/services/gitlab/reconcile.py`](dinext_git/services/gitlab/reconcile.py) — reconciliation and webhook health
 - [`dinext_git/services/gitlab/constants.py`](dinext_git/services/gitlab/constants.py) — artifact types, development status values, webhook events, workflow events
-- [`dinext_git/services/gitlab/panel_metadata.py`](dinext_git/services/gitlab/panel_metadata.py) — author avatars, artifact decoration, timestamps для UI
+- [`dinext_git/services/gitlab/panel_metadata.py`](dinext_git/services/gitlab/panel_metadata.py) — author avatars, artifact decoration, UI timestamps
 - [`dinext_git/public/js/development_panel_ui.js`](dinext_git/public/js/development_panel_ui.js) — shared UI: status pills, artifact list, GitLab project links
-- [`dinext_git/public/js/task_development.js`](dinext_git/public/js/task_development.js) — form script вкладки Development на `Task`
-- [`dinext_git/public/js/issue_development.js`](dinext_git/public/js/issue_development.js) — form script вкладки Development на `Issue`
-- [`dinext_git/public/js/task_development_list.js`](dinext_git/public/js/task_development_list.js) — list view formatter для `custom_git_development_status` на `Task`
-- [`dinext_git/public/js/issue_development_list.js`](dinext_git/public/js/issue_development_list.js) — list view formatter для `Issue`
-- [`dinext_git/public/css/development_panel.css`](dinext_git/public/css/development_panel.css) — стили вкладки Development
-- [`dinext_git/translations/ru.csv`](dinext_git/translations/ru.csv) — русские переводы статусов и UI
-- [`dinext_git/dinext_git/doctype/gitlab_type_visibility_rule/gitlab_type_visibility_rule.json`](dinext_git/dinext_git/doctype/gitlab_type_visibility_rule/gitlab_type_visibility_rule.json) — child table правил видимости по типам
-- [`dinext_git/tests/test_development_panel_payload.py`](dinext_git/tests/test_development_panel_payload.py) — тесты payload и type visibility
-- [`dinext_git/tests/test_matcher.py`](dinext_git/tests/test_matcher.py) — тесты meta-aware key matching и webhook linking
-- [`dinext_git/dinext_git/workspace/разработки/разработки.json`](dinext_git/dinext_git/workspace/разработки/разработки.json) — Workspace **Разработки**
-- [`dinext_git/dinext_git/number_card/`](dinext_git/dinext_git/number_card/) — 12 Number Cards для сводки и предупреждений
-- [`dinext_git/tests/test_development_workspace.py`](dinext_git/tests/test_development_workspace.py) — тесты структуры workspace и соответствия Number Cards
-- [`dinext_git/tests/test_dev_status_projection.py`](dinext_git/tests/test_dev_status_projection.py) — тесты расчёта `custom_git_development_status`
-- [`dinext_git/tests/test_workflow_sync.py`](dinext_git/tests/test_workflow_sync.py) — тесты `Development Workflow Rule`
-- [`dinext_git/tests/test_translations.py`](dinext_git/tests/test_translations.py) — валидация переводимых строк
-
-## ❤️ Благодарности
-
-- Frappe и ERPNext за metadata-driven платформу приложений
-- `dinext_projects` за окружающий контекст проектов, задач и issues, с которым интегрируется это приложение
+- [`dinext_git/public/js/task_development.js`](dinext_git/public/js/task_development.js) — Development tab form script on `Task`
+- [`dinext_git/public/js/issue_development.js`](dinext_git/public/js/issue_development.js) — Development tab form script on `Issue`
+- [`dinext_git/public/js/task_development_list.js`](dinext_git/public/js/task_development_list.js) — `Task` list view formatter for `custom_git_development_status`
+- [`dinext_git/public/js/issue_development_list.js`](dinext_git/public/js/issue_development_list.js) — `Issue` list view formatter
+- [`dinext_git/public/css/development_panel.css`](dinext_git/public/css/development_panel.css) — Development tab styles
+- [`dinext_git/translations/ru.csv`](dinext_git/translations/ru.csv) — Russian translations of statuses and UI
+- [`dinext_git/dinext_git/doctype/gitlab_type_visibility_rule/gitlab_type_visibility_rule.json`](dinext_git/dinext_git/doctype/gitlab_type_visibility_rule/gitlab_type_visibility_rule.json) — type visibility rules child table
+- [`dinext_git/tests/test_development_panel_payload.py`](dinext_git/tests/test_development_panel_payload.py) — payload and type visibility tests
+- [`dinext_git/tests/test_matcher.py`](dinext_git/tests/test_matcher.py) — metadata-aware key matching and webhook linking tests
+- [`dinext_git/dinext_git/workspace/разработки/разработки.json`](dinext_git/dinext_git/workspace/разработки/разработки.json) — **Development** workspace
+- [`dinext_git/dinext_git/number_card/`](dinext_git/dinext_git/number_card/) — 12 Number Cards for summaries and warnings
+- [`dinext_git/tests/test_development_workspace.py`](dinext_git/tests/test_development_workspace.py) — workspace structure and Number Card consistency tests
+- [`dinext_git/tests/test_dev_status_projection.py`](dinext_git/tests/test_dev_status_projection.py) — `custom_git_development_status` calculation tests
+- [`dinext_git/tests/test_workflow_sync.py`](dinext_git/tests/test_workflow_sync.py) — `Development Workflow Rule` tests
+- [`dinext_git/tests/test_translations.py`](dinext_git/tests/test_translations.py) — translatable string validation
 
 ## 📝 Changelog
 
-- **Initial scaffold** — базовое Frappe-приложение Dinext Git с GitLab traceability, webhook ingest, reconciliation, reports и development panel для `Task`/`Issue`.
-- **Multi-mapping** — один Dinext `Project` может ссылаться на несколько GitLab repositories через child table на вкладке `Development`.
-- **User-scoped tokens** — `Create Branch` использует персональный `User.GitLab Branch Token`.
-- **Multi-branch work items** — один `Task` или `Issue` может быть связан с несколькими branch; повторное создание branch не блокируется активной веткой.
-- **Create Branch dialog** — разовый override `branch_naming_template`, выбор `Base branch` из live-списка GitLab, bootstrap default mapping при открытии диалога; mapping defaults не перезаписываются.
-- **Type visibility rules** — child table `GitLab Type Visibility Rules` ограничивает показ вкладки Development по типам `Task`/`Issue`; пустой тип в правиле означает «разрешить все типы» для соответствующего DocType.
-- **Soft-delete sync** — удаление branch в GitLab через delete-push webhook или reconciliation orphan detection; tombstone `artifact_status = deleted`, исключение из summary, вкладки Development и отчётов.
-- **Meta-aware key matching** — GitLab → Dinext резолв work item по Meta naming settings `Task`/`Issue`, ручным именам, generic token fallback и `Development Key Alias`; Create Branch по-прежнему использует фактический `doc.name`.
-- **Workspace «Разработки»** — git-cockpit с 12 Number Cards по Git-статусам, расхождениям и предупреждениям, shortcuts на traceability/release reports и link cards для настройки интеграции; read-доступ для `Dinext_User` к отчётам и артефактам.
-- **Development Status v2** — канонические Select labels (`Not started`, `In progress`, `Merged`, `Declined`, `Pipeline failed`, `Deployed`) вместо legacy machine-codes; статус `Declined` при закрытом MR без merge; post-migrate patch для backfill.
-- **Shared development panel UI** — `development_panel_ui.js` + CSS: status pills, author chips, grouped artifacts по GitLab repository, ссылки на project/MR.
-- **List view integration** — колонка `Development Status` и formatter в `task_development_list.js` / `issue_development_list.js`.
-- **Tag/release webhook ingest** — нормализация `tag_push` и `release` events в артефакты `tag`/`release`/`deployment`.
-- **Workflow rule engine** — расширенные события MR review, pipeline, deployment; модульная структура `workflow_events.py`, `workflow_fields.py`, `workflow_sync.py`.
-- **Русская локализация** — расширенный `ru.csv` для статусов, вкладки Development и Workspace.
+- **Initial scaffold** — the foundational Dinext Git Frappe application with GitLab traceability, webhook ingestion, reconciliation, reports and a development panel for `Task`/`Issue`.
+- **Multi-mapping** — one Dinext `Project` can reference multiple GitLab repositories through a child table on the `Development` tab.
+- **User-scoped tokens** — `Create Branch` uses the personal `User.GitLab Branch Token`.
+- **Multi-branch work items** — one `Task` or `Issue` can link to multiple branches; an active branch does not prevent another from being created.
+- **Create Branch dialog** — a one-time `branch_naming_template` override, `Base branch` selection from a live GitLab list, and default mapping bootstrap when the dialog opens; mapping defaults are not overwritten.
+- **Type visibility rules** — the `GitLab Type Visibility Rules` child table restricts Development tab visibility by `Task`/`Issue` type; an empty type in a rule means all types of that DocType are permitted.
+- **Soft-delete sync** — GitLab branch deletion through a delete-push webhook or orphan detection during reconciliation; the `artifact_status = deleted` tombstone, exclusion from summaries, the Development tab and reports.
+- **Meta-aware key matching** — GitLab → Dinext work item resolution using `Task`/`Issue` Meta naming settings, manual names, generic token fallback and `Development Key Alias`; Create Branch still uses the actual `doc.name`.
+- **Development workspace** — a Git cockpit with 12 Number Cards for Git statuses, discrepancies and warnings, traceability/release report shortcuts and integration setup link cards; `Dinext_User` read access to reports and artifacts.
+- **Development Status v2** — canonical Select labels (`Not started`, `In progress`, `Merged`, `Declined`, `Pipeline failed`, `Deployed`) instead of legacy machine codes; `Declined` for an MR closed without merging; a post-migrate backfill patch.
+- **Shared development panel UI** — `development_panel_ui.js` + CSS: status pills, author chips, artifacts grouped by GitLab repository, project/MR links.
+- **List view integration** — a `Development Status` column and formatter in `task_development_list.js` / `issue_development_list.js`.
+- **Tag/release webhook ingest** — normalization of `tag_push` and `release` events into `tag`/`release`/`deployment` artifacts.
+- **Workflow rule engine** — extended MR review, pipeline and deployment events; modular `workflow_events.py`, `workflow_fields.py`, `workflow_sync.py` structure.
+- **Russian localization** — extended `ru.csv` for statuses, the Development tab and Workspace.
 
-## 🗂️ Структура репозитория
+## 🗂️ Repository structure
 
 ```text
 .
@@ -533,7 +530,7 @@ bench --site your-site.local export-fixtures --app dinext_git
         │   ├── git_dev_tasks_declined/
         │   ├── git_dev_tasks_discrepancies/
         │   ├── git_dev_tasks_pipeline_failed/
-        │   └── … (Issue-варианты)
+        │   └── … (Issue variants)
         ├── workspace/
         │   └── разработки/
         │       └── разработки.json
@@ -552,16 +549,16 @@ bench --site your-site.local export-fixtures --app dinext_git
             └── gitlab_traceability_exceptions/
 ```
 
-Пояснения к структуре:
+Structure notes:
 
-- `dinext_git/dinext_git/doctype/` содержит metadata-backed определения DocType и контроллеры.
-- `dinext_git/dinext_git/number_card/` и `dinext_git/dinext_git/workspace/` — module metadata для git-cockpit; синхронизируются через `bench migrate`.
-- `dinext_git/services/gitlab/` содержит GitLab client, webhook normalization, reconciliation, branch actions, constants и projection summary.
-- `dinext_git/api/` содержит whitelisted endpoints для UI, webhook admin и публичного ingest.
-- `dinext_git/public/js/` и `public/css/` — client scripts форм `Task`/`Issue`, list view formatters и shared UI вкладки Development.
-- `dinext_git/fixtures/custom_field.json` — экспортированные Custom Field; редактируется только через MCP/UI и export-fixtures.
-- `dinext_git/translations/ru.csv` — русские переводы UI и статусов.
-- `dinext_git/tests/` содержит интеграционные и unit-тесты traceability-потока.
+- `dinext_git/dinext_git/doctype/` contains metadata-backed DocType definitions and controllers.
+- `dinext_git/dinext_git/number_card/` and `dinext_git/dinext_git/workspace/` contain Git cockpit module metadata; synchronized through `bench migrate`.
+- `dinext_git/services/gitlab/` contains the GitLab client, webhook normalization, reconciliation, branch actions, constants and summary projection.
+- `dinext_git/api/` contains whitelisted endpoints for the UI, webhook administration and public ingestion.
+- `dinext_git/public/js/` and `public/css/` contain `Task`/`Issue` form client scripts, list view formatters and shared Development tab UI.
+- `dinext_git/fixtures/custom_field.json` contains exported Custom Fields; edited only through MCP/UI and export-fixtures.
+- `dinext_git/translations/ru.csv` contains Russian UI and status translations.
+- `dinext_git/tests/` contains traceability flow integration and unit tests.
 
 ## 🔗 Flow Chart
 
@@ -598,112 +595,112 @@ flowchart LR
   GL --> WH
 ```
 
-Поток данных:
+Data flow:
 
-1. Оператор настраивает `GitLab Instance`, mapping и при необходимости type visibility rules на `Project`.
-2. Разработчик работает из `Task`/`Issue`; сервер рассчитывает `show_gitlab_tab` по mapping и правилам типов.
-3. GitLab шлёт webhook в Dinext; normalizer создаёт, обновляет или помечает `deleted` для `Development Artifact` и поддерживает связи с work item.
-4. Reconciliation и webhook health jobs догоняют расхождения между GitLab и Dinext, в том числе ветки, удалённые в GitLab без доставленного webhook.
-5. UI формы запрашивает payload у `development_panel.get_panel` и отображает только активные artifacts, summary и branch actions; диалог **Create Branch** использует `gitlab_branches.options`, `preview` и `create`.
-6. Workspace **Разработки** показывает агрегированную сводку по Git-полям на `Task`/`Issue`, предупреждения и быстрый переход к traceability/release reports и настройкам интеграции.
+1. The operator configures `GitLab Instance`, mappings and, if necessary, type visibility rules on `Project`.
+2. The developer works from `Task`/`Issue`; the server calculates `show_gitlab_tab` from mappings and type rules.
+3. GitLab sends a webhook to Dinext; the normalizer creates, updates or marks `Development Artifact` as `deleted`, and maintains work item links.
+4. Reconciliation and webhook health jobs resolve differences between GitLab and Dinext, including branches deleted in GitLab without a delivered webhook.
+5. The form UI requests a payload from `development_panel.get_panel` and displays only active artifacts, summaries and branch actions; **Create Branch** uses `gitlab_branches.options`, `preview` and `create`.
+6. The **Development** workspace shows aggregate Git fields on `Task`/`Issue`, warnings and quick access to traceability/release reports and integration settings.
 
-## Проверка и отладка
+## Validation and debugging
 
-### Основные проверки
+### Main checks
 
 ```bash
 bench --site your-site.local run-tests --app dinext_git
 bench --site your-site.local export-fixtures --app dinext_git
 ```
 
-### Если Create Branch недоступен или preview падает
+### If Create Branch is unavailable or its preview fails
 
-Проверьте:
+Check:
 
-- заполнен ли **GitLab Branch Token** у текущего пользователя;
-- достаточно ли scope у personal token для чтения веток и создания branch в выбранном repository;
-- есть ли enabled mapping на `Project -> Development` и корректен ли `branch_naming_template` (должен содержать `{key}`);
-- ответ `can_create_branch` и `branch_error` в payload `development_panel.get_panel`;
-- доступность GitLab API для `list_branches` (список `Base branch` в диалоге);
-- что выбранная base branch существует в remote (`Base branch {0} was not found...`).
+- whether the current user has filled in **GitLab Branch Token**;
+- whether the personal token has sufficient scopes to read branches and create a branch in the selected repository;
+- whether `Project -> Development` has an enabled mapping and a valid `branch_naming_template` (must contain `{key}`);
+- the `can_create_branch` and `branch_error` values in the `development_panel.get_panel` payload;
+- GitLab API availability for `list_branches` (the `Base branch` list in the dialog);
+- whether the selected base branch exists remotely (`Base branch {0} was not found...`).
 
-### Если webhook не сработал
+### If a webhook did not run
 
-Проверьте:
+Check:
 
-- `GitLab Event Log` для delivery status и payload
-- `Log Settings`, если исторические записи `GitLab Event Log` пропали из-за retention policy;
-- строку **GitLab Project Mappings** на вкладке `Project -> Development`
+- `GitLab Event Log` for delivery status and payload
+- `Log Settings` if historical `GitLab Event Log` records disappeared because of the retention policy;
+- the **GitLab Project Mappings** row on the `Project -> Development` tab
 - `GitLab Project Mapping.webhook_status`
 - `GitLab Project Mapping.webhook_last_error`
 - scheduler job `verify_webhook_health`
 
-### Если артефакт не связался с Task/Issue
+### If an artifact was not linked to Task/Issue
 
-Проверьте:
+Check:
 
-- branch/MR title/commit message содержит **фактический Dinext key** (`name` документа), а не только subject или legacy alias;
-- для нестандартных имён и кастомных naming series — есть ли запись в **Development Key Alias**;
-- после изменения `autoname` / `naming_series` у `Task` или `Issue` перезапустите workers (matcher кэширует Meta patterns);
-- `Development Artifact Link.extracted_key` и `link_source` в связанном artifact — помогает понять, какой текст распознал matcher;
-- отчёт **GitLab Traceability Exceptions** и тесты [`test_matcher.py`](dinext_git/tests/test_matcher.py) как reference для ожидаемого поведения.
+- whether the branch/MR title/commit message contains the **actual Dinext key** (document `name`), rather than only the subject or legacy alias;
+- whether **Development Key Alias** has a record for nonstandard names and custom naming series;
+- after changing `autoname` / `naming_series` on `Task` or `Issue`, restart workers (the matcher caches Meta patterns);
+- `Development Artifact Link.extracted_key` and `link_source` on the linked artifact — these help identify the text recognized by the matcher;
+- the **GitLab Traceability Exceptions** report and [`test_matcher.py`](dinext_git/tests/test_matcher.py) tests as a reference for expected behavior.
 
-### Если reconciliation отстаёт
+### If reconciliation is falling behind
 
-Проверьте:
+Check:
 
-- строку **GitLab Project Mappings** на вкладке `Project -> Development`
+- the **GitLab Project Mappings** row on the `Project -> Development` tab
 - `GitLab Project Mapping.last_reconciled_mr_at`
 - `GitLab Project Mapping.last_reconciled_pipeline_at`
 - `Reconciliation Cursor`
-- scheduler jobs `run_hourly_reconciliation` и `run_daily_reconciliation`
+- the `run_hourly_reconciliation` and `run_daily_reconciliation` scheduler jobs
 
 ### Retention GitLab Event Log
 
-`GitLab Event Log` подключён к стандартному механизму Frappe **Log Settings**. По умолчанию записи очищаются по retention `30` дней, но оператор может изменить это значение в `Log Settings -> Logs to Clear` для doctype `GitLab Event Log`.
+`GitLab Event Log` uses Frappe's standard **Log Settings** mechanism. Records are cleaned after a default retention of `30` days, but the operator can change it in `Log Settings -> Logs to Clear` for the `GitLab Event Log` DocType.
 
-### Если ветка удалена в GitLab, но в Dinext ещё «живая»
+### If a branch was deleted in GitLab but remains live in Dinext
 
-Проверьте:
+Check:
 
-- пришёл ли delete-push в `GitLab Event Log` (тип `Push Hook`, в payload `after` / `checkout_sha` с all-zero SHA);
-- `Development Artifact.artifact_status` для соответствующей branch — ожидается `deleted`;
-- отработал ли reconciliation: у mapping должен быть доступ к GitLab API для чтения веток; в результате `reconcile_mapping` поле `branches_deleted` показывает число tombstone-операций за прогон;
-- пересчитались ли `custom_git_*` на связанном `Task`/`Issue` после tombstone.
+- whether a delete push arrived in `GitLab Event Log` (`Push Hook` type, `after` / `checkout_sha` containing an all-zero SHA in the payload);
+- `Development Artifact.artifact_status` for the branch — the expected value is `deleted`;
+- whether reconciliation ran: the mapping must have GitLab API access to read branches; the `branches_deleted` field in `reconcile_mapping` results reports the number of tombstone operations in that run;
+- whether `custom_git_*` was recalculated on the linked `Task`/`Issue` after the tombstone operation.
 
-### Если workflow не сдвинулся
+### If the workflow did not transition
 
-Проверьте:
+Check:
 
-- summary fields `custom_git_*` на `Task`/`Issue`
-- наличие и порядок `Development Workflow Rule`
-- что правило относится к нужному `Project`, `Target Field` и `Target Value`
-- Error Log на записи `Dinext Git workflow rule failed`
+- `custom_git_*` summary fields on `Task`/`Issue`
+- the presence and order of `Development Workflow Rule` records
+- whether the rule applies to the intended `Project`, `Target Field` and `Target Value`
+- Error Log for `Dinext Git workflow rule failed`
 - event log / normalized artifact links
-- отчёт **GitLab Traceability Exceptions**
+- the **GitLab Traceability Exceptions** report
 
-### Если вкладка Development не показывается
+### If the Development tab is not displayed
 
-Проверьте:
+Check:
 
-- есть ли enabled mapping на `Project -> Development`
-- попадает ли `Task.type` / `Issue.issue_type` в **GitLab Type Visibility Rules**
-- нет ли blank rule для соответствующего DocType, который разрешает все типы
-- ответ `show_gitlab_tab` в payload `development_panel.get_panel`
+- whether an enabled mapping exists on `Project -> Development`
+- whether `Task.type` / `Issue.issue_type` is covered by **GitLab Type Visibility Rules**
+- whether a blank rule permits all types for the corresponding DocType
+- the `show_gitlab_tab` response in the `development_panel.get_panel` payload
 
-### Если Workspace «Разработки» не виден или пустой
+### If the Development workspace is hidden or empty
 
-Проверьте:
+Check:
 
-- установлено ли приложение `dinext_git` на сайте (`bench --site <site> list-apps`);
-- выполнен ли `bench --site <site> migrate` после обновления репозитория;
-- есть ли у пользователя роль `Dinext_User` или `System Manager`;
-- в Desk → Workspace существует запись **Разработки** модуля Dinext Git;
-- Number Cards из `dinext_git/dinext_git/number_card/` синхронизированы через `bench migrate` (модуль Dinext Git).
+- whether `dinext_git` is installed on the site (`bench --site <site> list-apps`);
+- whether `bench --site <site> migrate` ran after the repository update;
+- whether the user has `Dinext_User` or `System Manager`;
+- whether Desk → Workspace has a **Development** record in the Dinext Git module;
+- whether Number Cards from `dinext_git/dinext_git/number_card/` were synchronized through `bench migrate` (Dinext Git module).
 
-## Отчёты
+## Reports
 
-Отчёты доступны из Workspace **Разработки**, из link cards и напрямую из модуля Dinext Git. Роль `Dinext_User` имеет read-доступ к обоим Script Reports.
+Reports are available from the **Development** workspace, link cards and directly from the Dinext Git module. The `Dinext_User` role has read access to both Script Reports.
 
 - **GitLab Traceability Exceptions**
   - tasks without MR
@@ -712,8 +709,8 @@ bench --site your-site.local export-fixtures --app dinext_git
   - stuck reviews
   - tasks in release without merge
 - **GitLab Release Composition**
-  - состав релиза по задачам Dinext и фактам GitLab (`release`, `tag`, `deployment` при наличии merged MR)
+  - release composition by Dinext tasks and GitLab facts (`release`, `tag`, `deployment` when a merged MR exists)
 
 ## License
 
-GNU GPL v3. Текст — в [license.txt](license.txt).
+GNU GPL v3. See [license.txt](license.txt) for the license text.
