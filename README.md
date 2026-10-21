@@ -1,5 +1,25 @@
 [Русский](README.ru.md)
 
+<!-- dinext-presentation:start -->
+<p align="center">
+  <a href="https://dinext.ru"><img src="docs/assets/readme/dinext-logo.png" alt="Dinext" width="128"></a>
+</p>
+<h1 align="center">Dinext Git</h1>
+
+<hr>
+
+<p align="center">Connect Dinext tasks and issues to GitLab branches, commits, merge requests, pipelines and releases.</p>
+
+<p align="center">
+  <img src="docs/assets/readme/overview.png" alt="Development planning in Dinext: the website overview. The image shows task progress; GitLab traceability is described below." width="960">
+</p>
+<p align="center"><sub>Development planning in Dinext: the website overview. The image shows task progress; GitLab traceability is described below.</sub></p>
+
+<p align="center">
+  <a href="https://dinext.ru">Website</a> · <a href="https://docs.dinext.ru">Documentation</a>
+</p>
+<!-- dinext-presentation:end -->
+
 # Dinext Git
 
 ## 📖 Overview
